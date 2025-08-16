@@ -1,5 +1,3 @@
-﻿// DECLARATION AND DEFINITION SECTION
-
 %{
 #include<stdio.h>
 #include<stdlib.h>
@@ -7,11 +5,12 @@
 #include<ctype.h>
 
 #define MAX_SYM 1000
-#define STRDUP(s) _xstrdup((s))
+#define STRDUP(s) _strdup((s))
 
 int lineNumber = 1;
 
-typedef struct {
+// Symbol Table linked list item struct
+typedef struct SymbolEntry {
     char *name;
     char *type;
     char *dimensions; // for an array arr[10][20], the dimensions would be "[10][20]"
@@ -21,7 +20,8 @@ typedef struct {
     struct SymbolEntry *next;
 } SymbolEntry;
 
-typedef struct {
+// Constant Table linked list item struct
+typedef struct ConstantEntry{
     char *name;
     int lineNums[50];
     int lineInd;
@@ -33,26 +33,35 @@ typedef struct {
 static SymbolEntry *symbols = NULL;
 static ConstantEntry *constants = NULL;
 
-static SymbolEntry* findSymbol (const char* name) {
-    for (SymbolEntry temp = symbols ; temp != NULL ; temp = temp->next) {
-        if (strcmp(temp->name, name) == 0) return temp;
+// Sybmol Table Helper Functions
+static SymbolEntry* findSymbol (const char* name) 
+{
+    for (SymbolEntry* temp = symbols ; temp != NULL ; temp = temp->next) 
+    {
+        if (strcmp(temp->name, name) == 0) 
+            return temp;
     }
     return NULL;
 }
 
-void addSymbol (const char* name, const char* type, const char* dimensions, const char* returnType, const char* parameters) {
+void addSymbol (const char* name, const char* type, const char* dimensions, const char* returnType, const char* parameters) 
+{
     SymbolEntry* s = findSymbol(name);
-    if (s) {
+    if (s) 
+    {
         s->frequency++;
-        if (dims && strcmp(s->dimensions, "-") != 0) {
+        if (dimensions && strcmp(s->dimensions, "-") != 0) 
+        {
             free(s->dimensions);
             s->dimensions = STRDUP(dimensions);
         }
-        if (parameters && strcmp(s->parametersList, "-") != 0) {
+        if (parameters && strcmp(s->parametersList, "-") != 0) 
+        {
             free(s->parametersList);
             s->parametersList = STRDUP(parameters);
         }
-        if (type && strcmp(type, "function") == 0) {
+        if (type && strcmp(type, "function") == 0) 
+        {
             free(s->type);
             free(s->returnType);
             s->type = STRDUP("function");
@@ -60,18 +69,22 @@ void addSymbol (const char* name, const char* type, const char* dimensions, cons
         }
         return;
     }
+
     s = (SymbolEntry*)calloc(1,sizeof(SymbolEntry));
     s->name = STRDUP(name);
     s->type = STRDUP(type);
-    s->dimensions = STRDUPS(dimensions ? dimensions : "-");
+    s->dimensions = STRDUP(dimensions ? dimensions : "-");
     s->frequency = 1;
     s->returnType = STRDUP(returnType ? returnType : "-");
     s->parametersList = STRDUP(parameters ? parameters : "-");
     s->next = NULL;
+
     if (!symbols) symbols = s;
-    else {
+    else 
+    {
         SymbolEntry* t = symbols;
-        while (t->next) {
+        while (t->next) 
+        {
             t = t->next;
         }
         t->next = s;
@@ -79,72 +92,109 @@ void addSymbol (const char* name, const char* type, const char* dimensions, cons
     return;
 }
 
-static ConstantEntry* findConstant (const char* name) {
-    for (ConstantEntry* temp = constants ; temp != NULL ; temp = tem->next) {
-        if (strcmp(temp->name, name) == 0) {
+// Constant Table Helper Functions
+static ConstantEntry* findConstant (const char* name) 
+{
+    for (ConstantEntry* temp = constants ; temp != NULL ; temp = temp->next) 
+    {
+        if (strcmp(temp->name, name) == 0) 
+        {
             return temp;
         }
     }
     return NULL;
 }
 
-void addConstant (const char* name, int line, const char* value, const char* type) {
+void addConstant(const char* name, int line, const char* value, const char* type) 
+{
     ConstantEntry* s = findConstant(name);
-    if (s) {
-        s->lineNums[lineInd] = line;
-        lineInd++;
+    if (s) 
+    {
+        s->lineNums[s->lineInd] = line;
+        s->lineInd++;
         return;
     }
+
     s = (ConstantEntry*)calloc(1, sizeof(ConstantEntry));
     s->name = STRDUP(name);
-    lineInd = 0;
-    s->lineNums[lineInd++] = line;
-    s->value = STRDUP(value);
+    s->lineInd = 0;  // initialize index for new constant
+    s->lineNums[s->lineInd++] = line;
+    s->values = STRDUP(value);
     s->type = STRDUP(type);
     s->next = NULL;
-    if (!constants) {
+
+    if (!constants) 
+    {
         constants = s;
     }
-    else {
+    else 
+    {
         ConstantEntry* t = constants;
         while (t->next) t = t->next;
         t->next = s;
     }
-    return;
+}
+
+// List of keywords 
+static const char *keywords[] = {
+    "if", "else", "for", "while", "do",
+    "int", "float", "char", "double", "void",
+    "return", "break", "continue", "switch",
+    "case", "default", "struct", "typedef",
+    "enum", "goto", "sizeof", "static",
+    "const", "unsigned", "signed", "long",
+    "short", "volatile", "register", "extern",
+    "auto", NULL  /* NULL marks end of list */
+};
+
+// Check if a given string is a keyword 
+static int isKeyword(const char *s) 
+{
+    for (int i = 0; keywords[i] != NULL; i++) 
+    {
+        if (strcmp(s, keywords[i]) == 0) 
+        {
+            return 1;  
+        }
+    }
+    return 0;  
 }
 
 // To peek into the next character that is not a space.
 // This is helpful to check if we have an upcoming parenthesis. This discovery can tell us that the identifier is that of a function.
-static int peekNextNonSpace () {
+static int peekNextNonSpace () 
+{
     int c;
     do {
-        c = yyinput();
+        c = input();
         if (c == EOF) break;
         if (!isspace(c)) {
             unput(c);
             return c;
         }
         unput(c);
-        c = yyinput();
+        c = input();
     } while (isspace(c));
     if (c != EOF) unput(c);
     return c;
 }
 
+// Capture the contents inside the first balanced parenthesis pair
+// Handles nested parathesis and other edge cases
 static char* captureParenthesis () {
     int c;
     int depth = 0;
     char buffer[2000];
     size_t k = 0;
     do {
-        c = yyinput();
+        c = input();
     } while (c != EOF && isspace(c));
     if (c != '(') {
         if (c != EOF) unput(c);
         return STRDUP("-");
     }
     depth = 1;
-    while ((c = yyinput()) != EOF) {
+    while ((c = input()) != EOF) {
         if (c =='\n') yylineno++;
         if (k < sizeof(buffer) - 1) buffer[k++] = (char)c;
         if (c == '(') depth++;
@@ -154,11 +204,11 @@ static char* captureParenthesis () {
         }
         else if (c == '\"') { /* string literal safety */
             int d;
-            while ((d = yyinput()) != EOF) {
+            while ((d = input()) != EOF) {
                 if (d == '\n') yylineno++;
                 if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
                 if (d == '\\') {
-                    int e = yyinput();
+                    int e = input();
                     if (e == EOF) break;
                     if (k < sizeof(buffer) - 1) {
                         buffer[k++] = (char)e; 
@@ -168,15 +218,15 @@ static char* captureParenthesis () {
                 }
             }
         } else if (c == '\'') { /* char literal safety */
-            int d = yyinput();
+            int d = input();
             if(d == EOF) break;
-            if (k < sizeof(buffer) - 1) buf[k++] = (char)d;
+            if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
             if(d=='\\') { 
-                int e=yyinput(); 
+                int e=input(); 
                 if (e == EOF) break; 
                 if (k < sizeof(buffer) - 1) buffer[k++] = (char)e;
             }
-            d = yyinput();
+            d = input();
             if (d == EOF) break;
             if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
         }
@@ -196,6 +246,7 @@ static char* captureParenthesis () {
     return STRDUP(buffer);
 }
 
+// Helper function to extract function parameter lists
 static char* getParameters () {
     int c;
     int depth = 0;
@@ -203,7 +254,7 @@ static char* getParameters () {
     size_t k=0;
 
     do { 
-        c = yyinput(); 
+        c = input(); 
     } while (c != EOF && isspace(c));
     if (c != '(') {
         if (c != EOF) unput(c);
@@ -211,7 +262,7 @@ static char* getParameters () {
     }
     depth = 1;
 
-    while ((c = yyinput()) != EOF) {
+    while ((c = input()) != EOF) {
         if (c == '\n') yylineno++;
         if (k < sizeof(buffer) - 1) buffer[k++] = (char)c;
         if (c == '(') depth++;
@@ -221,11 +272,11 @@ static char* getParameters () {
         } 
         else if (c == '\"') {
             int d;
-            while ((d = yyinput()) != EOF) {
+            while ((d = input()) != EOF) {
                 if (d == '\n') yylineno++;
                 if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
                 if (d == '\\') { 
-                    int e = yyinput(); 
+                    int e = input(); 
                     if (e == EOF) break; 
                     if (k < sizeof(buffer) - 1) {
                         buffer[k++] = (char)e;
@@ -236,15 +287,15 @@ static char* getParameters () {
             } 
         }
         else if (c == '\'') {
-            int d = yyinput(); 
+            int d = input(); 
             if (d == EOF) break; 
             if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
             if (d == '\\') { 
-                int e = yyinput(); 
+                int e = input(); 
                 if (e == EOF) break; 
                 if (k < sizeof(buffer) - 1) buffer[k++] = (char)e; 
             }
-            d = yyinput(); 
+            d = input(); 
             if (d == EOF) break; 
             if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
         }
@@ -256,7 +307,7 @@ static char* getParameters () {
 
     if (k > 0 && buffer[0] == '(') {
         size_t len = strlen(buffer);
-        if (len > 0) { memmove(buf, buffer + 1, len); }
+        if (len > 0) { memmove(buffer, buffer + 1, len); }
     }
     return STRDUP(buffer);
 }
@@ -265,8 +316,6 @@ static char* getParameters () {
 
 %option noyywrap
 %option yylineno
-%option nounput
-%option noinput
 
 %x COMMENT
 
@@ -283,67 +332,90 @@ STR             \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
 
 %%
 
-// RULES SECTION
-
-// Preprocessor directives
-^[ \t]*\#[^\n]* { } 
+^[ \t]*\#[^\n]* { printf("PREPROCESSOR: %s (line %d)\n", yytext, yylineno); } 
 {WHITESPACE}    { }
 
-// Comments
-//.*            { }
-"//".*          { }
-"/*"            {
-                    int depth=1, c,d;
-                    while((c = yyinput()) != EOF) {
-                        if (c == '\n') yylineno++;
-                        if (c == '/' && (d = yyinput()) == '*') { depth++; }
-                        else if (c == '*' && (d = yyinput()) == '/') { depth--; if(depth == 0) break; }
-                        else { if (d != EOF) unput(d); }
-                    }
-                    if (depth > 0){
-                        fprintf(stderr, "[line %d] ERROR: Unterminated comment\n", yylineno);
-                    }
-                }
+"//".*    {
+    printf("Single-line comment: %s (line %d)\n", yytext, yylineno);
+}
+"/*"    {
+    char buffer[8192];   
+    int i = 0, c, d;
 
-// Keywords
-"auto"|"break"|"case"|"char"|"const"|"continue"|"default"|"do"|"double"|"else"|"enum"|"extern"|"float"|"for"|"goto"|"if"|"inline"|"int"|"long"|"register"|"restrict"|"return"|"short"|"signed"|"sizeof"|"static"|"struct"|"switch"|"typedef"|"union"|"unsigned"|"void"|"volatile"|"while"|"_Bool"|"_Complex"|"_Imaginary"|"_Alignas"|"_Alignof"|"_Atomic"|"_Noreturn"|"_Static_assert"|"_Thread_local"
-                { }
+    buffer[i++] = '/';
+    buffer[i++] = '*';
 
-// Identifiers
+    while ((c = yyinput()) != EOF) {
+        buffer[i++] = (char)c;
+
+        if (c == '\n') yylineno++;
+
+        if (c == '*' && (d = yyinput()) == '/') {
+            buffer[i++] = (char)d;
+            buffer[i] = '\0';
+            printf("Multi-line comment (line %d):\n%s\n", yylineno, buffer);
+            break;
+        } else if (d != EOF) {
+            unput(d);
+        }
+
+        if (i >= sizeof(buffer) - 2) {
+            fprintf(stderr, "Comment too long!\n");
+            break;
+        }
+    }
+
+    if (c == EOF) {
+        buffer[i] = '\0';
+        fprintf(stderr, "[line %d] ERROR: Unterminated comment\n%s\n", yylineno, buffer);
+    }
+}
+
 {IDENTIFIERS}   {
                     const char* name = yytext;
-                    int c = peekNextNonSpace()
-                    if (c == '(') {
-                        char *parameters = getParameters();
-                        addSymbol(name, "function", "-", "-", parameters);
-                        free(parameters);
+
+                    if (isKeyword(name)) {
+                        addSymbol(name, "keyword", "-", "-", "-");
                     }
-                    else if (c == '[') {
-                        int t = yyinput();
-                        char dimensionsBuffer[256];
-                        size_t k = 0;
-                        dimensionsBuffer[k++] = '[';
-                        int depth = 1;
-                        int ch;
-                        while ((ch == yyinput()) != EOF) {
-                            if (ch == '\n') yylineno++;
-                            dimensionsBuffer[k++] = (char)ch;
-                            if (ch == '[') depth++;
-                            else if (ch == ']') {
-                                depth--;
-                                if (depth == 0) break;
-                            }
-                            if (k >= sizeof(dimensionsBuffer) - 2) break;
+                    else
+                    {
+                        // To determine variable, array or function name
+                        int c = peekNextNonSpace();
+                        
+                        // Function call detected
+                        if (c == '(') {
+                            char *parameters = getParameters();
+                            addSymbol(name, "function", "-", "-", parameters);
+                            free(parameters);
                         }
-                        dimensionsBuffer[k] = '\0';
-                        addSymbol(name, "identifier", dimensionsBuffer, "-", "-");
-                    }   
-                    else {
-                        addSymbol(name, "identifier", "-", "-", "-");
+                        // Array detected
+                        else if (c == '[') {
+                            int t = yyinput();
+                            char dimensionsBuffer[256];
+                            size_t k = 0;
+                            dimensionsBuffer[k++] = '[';
+                            int depth = 1;
+                            int ch;
+                            while ((ch == yyinput()) != EOF) {
+                                if (ch == '\n') yylineno++;
+                                dimensionsBuffer[k++] = (char)ch;
+                                if (ch == '[') depth++;
+                                else if (ch == ']') {
+                                    depth--;
+                                    if (depth == 0) break;
+                                }
+                                if (k >= sizeof(dimensionsBuffer) - 2) break;
+                            }
+                            dimensionsBuffer[k] = '\0';
+                            addSymbol(name, "identifier", dimensionsBuffer, "-", "-");
+                        }   
+                        // Variable name
+                        else {
+                            addSymbol(name, "identifier", "-", "-", "-");
+                        }
                     }
                 }
 
-// Operators & punctuation
 "..."                                                               { }
 "->"|"++"|"--"                                                      { }
 "<="|">="|"=="|"!="                                                 { }
@@ -352,17 +424,13 @@ STR             \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
 "+="|"-="|"*="|"/="|"%="|"&="|"|="|"^="                             { }
 "~"|"!"|"%"|"^"|"&"|"|"|"+"|"-"|"*"|"/"|"="|"<"|">"|"?"|":"|"."     { }
 
-"(" | ")" | "[" | "]" | "{" | "}" | "," | ";" 
-                        { print_token("PUNC", yytext); }
+"(" | ")" | "[" | "]" | "{" | "}" | "," | ";"  { print_token("PUNC", yytext); }
 
-// Float and integers
-// TODO: fix this part for all kind of numerical values and create functionality to add to constants table
 [0-9]*"."[0-9]+             {printf("%s is a fraction at line %d.\n", yytext, lineNumber);}
 [-][0-9]*"."[0-9]+          {printf("%s is a negative fraction at line %d.\n", yytext, lineNumber);}
 [0-9]+                      {printf("%s is an integer at line %d.\n", yytext, lineNumber);}
 "-"[0-9]+                   {printf("%s is a negative integer at line %d.\n", yytext, lineNumber);}
 
-// Empty spaces
 .                           { }
 [\t\n]+                     { }
 
@@ -380,8 +448,8 @@ int main (int argc, char **argv) {
             p->type,
             p->dimensions,
             p->frequency,
-            p->return_type ? p->return_type : "-",
-            p->param_list ? p->param_list : "-"
+            p->returnType ? p->returnType : "-",
+            p->parametersList ? p->parametersList : "-"
         );
     }
 
@@ -389,10 +457,6 @@ int main (int argc, char **argv) {
     printf("%-20s %-12s %-12s %-s\n",
         "Variable Name","Line Number","Value","Type");
     for (ConstantEntry* c = constants ; c != NULL ; c = c->next) {
-        printf("%-20s %-12d %-12s %-s\n", c->varname, c->line, c->value, c->type);
+        printf("%-20s %-12d %-12s %-s\n", c->name, c->lineNums[0], c->values, c->type);
     }
-}
-
-int yywrap (void) {
-    return 1;
 }
