@@ -9,6 +9,11 @@
 
 int lineNumber = 1;
 
+int yyinput(void) 
+{
+    return getc(yyin);  
+}
+
 // Symbol Table linked list item struct
 typedef struct SymbolEntry {
     char *name;
@@ -162,153 +167,167 @@ static int isKeyword(const char *s)
 
 // To peek into the next character that is not a space.
 // This is helpful to check if we have an upcoming parenthesis. This discovery can tell us that the identifier is that of a function.
-static int peekNextNonSpace () 
+static int peekNextNonSpace() 
 {
     int c;
     do {
-        c = input();
-        if (c == EOF) break;
-        if (!isspace(c)) {
-            unput(c);
-            return c;
-        }
-        unput(c);
-        c = input();
+        c = fgetc(yyin);
+        if (c == EOF) return EOF;
     } while (isspace(c));
-    if (c != EOF) unput(c);
+
+    ungetc(c, yyin);
     return c;
 }
 
+
 // Capture the contents inside the first balanced parenthesis pair
 // Handles nested parathesis and other edge cases
-static char* captureParenthesis () {
+static char* captureParenthesis() {
     int c;
     int depth = 0;
     char buffer[2000];
     size_t k = 0;
+
+    // Skip leading whitespace
     do {
-        c = input();
+        c = fgetc(yyin);
     } while (c != EOF && isspace(c));
+
+    // If it’s not a parenthesis, push it back and return "-"
     if (c != '(') {
-        if (c != EOF) unput(c);
+        if (c != EOF) ungetc(c, yyin);
         return STRDUP("-");
     }
+
     depth = 1;
-    while ((c = input()) != EOF) {
-        if (c =='\n') yylineno++;
+
+    while ((c = fgetc(yyin)) != EOF) {
+        if (c == '\n') yylineno++;
         if (k < sizeof(buffer) - 1) buffer[k++] = (char)c;
+
         if (c == '(') depth++;
         else if (c == ')') {
             depth--;
             if (depth == 0) break;
         }
-        else if (c == '\"') { /* string literal safety */
+        else if (c == '\"') { // string literal safety
             int d;
-            while ((d = input()) != EOF) {
+            buffer[k++] = c;
+            while ((d = fgetc(yyin)) != EOF) {
                 if (d == '\n') yylineno++;
                 if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
-                if (d == '\\') {
-                    int e = input();
+                if (d == '\\') { // escape sequence
+                    int e = fgetc(yyin);
                     if (e == EOF) break;
-                    if (k < sizeof(buffer) - 1) {
-                        buffer[k++] = (char)e; 
-                        continue; 
-                    }
-                    if (d == '\"') break;
+                    if (k < sizeof(buffer) - 1) buffer[k++] = (char)e;
+                    continue;
                 }
+                if (d == '\"') break;
             }
-        } else if (c == '\'') { /* char literal safety */
-            int d = input();
-            if(d == EOF) break;
+        }
+        else if (c == '\'') { // char literal safety
+            int d = fgetc(yyin);
+            if (d == EOF) break;
             if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
-            if(d=='\\') { 
-                int e=input(); 
-                if (e == EOF) break; 
+            if (d == '\\') {
+                int e = fgetc(yyin);
+                if (e == EOF) break;
                 if (k < sizeof(buffer) - 1) buffer[k++] = (char)e;
             }
-            d = input();
+            d = fgetc(yyin);
             if (d == EOF) break;
             if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
         }
+
         if (k >= sizeof(buffer) - 2) break;
     }
+
     buffer[k] = '\0';
 
-    /* remove trailing ) if present */
+    // Remove trailing ) if present
     if (k > 0 && buffer[k - 1] == ')') buffer[k - 1] = '\0';
 
-    /* strip the leading '(' if present */
+    // Remove leading '(' if present
     if (k > 0 && buffer[0] == '(') {
-        /* shift left one */
         size_t len = strlen(buffer);
-        if (len > 0) { memmove(buffer, buffer + 1, len); }
+        if (len > 0) memmove(buffer, buffer + 1, len);
     }
+
     return STRDUP(buffer);
 }
 
 // Helper function to extract function parameter lists
-static char* getParameters () {
+static char* getParameters() {
     int c;
     int depth = 0;
     char buffer[4096];
-    size_t k=0;
+    size_t k = 0;
 
-    do { 
-        c = input(); 
+    // Skip leading whitespace
+    do {
+        c = fgetc(yyin);
     } while (c != EOF && isspace(c));
+
+    // If not '(', return "-"
     if (c != '(') {
-        if (c != EOF) unput(c);
+        if (c != EOF) ungetc(c, yyin);
         return STRDUP("-");
     }
+
     depth = 1;
 
-    while ((c = input()) != EOF) {
+    while ((c = fgetc(yyin)) != EOF) {
         if (c == '\n') yylineno++;
         if (k < sizeof(buffer) - 1) buffer[k++] = (char)c;
+
         if (c == '(') depth++;
         else if (c == ')') {
             depth--;
             if (depth == 0) break;
-        } 
-        else if (c == '\"') {
+        }
+        else if (c == '\"') { // string literal
             int d;
-            while ((d = input()) != EOF) {
+            buffer[k++] = c;
+            while ((d = fgetc(yyin)) != EOF) {
                 if (d == '\n') yylineno++;
                 if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
-                if (d == '\\') { 
-                    int e = input(); 
-                    if (e == EOF) break; 
-                    if (k < sizeof(buffer) - 1) {
-                        buffer[k++] = (char)e;
-                        continue; 
-                    }
-                if (d == '\"') break;
+                if (d == '\\') {
+                    int e = fgetc(yyin);
+                    if (e == EOF) break;
+                    if (k < sizeof(buffer) - 1) buffer[k++] = (char)e;
+                    continue;
                 }
-            } 
-        }
-        else if (c == '\'') {
-            int d = input(); 
-            if (d == EOF) break; 
-            if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
-            if (d == '\\') { 
-                int e = input(); 
-                if (e == EOF) break; 
-                if (k < sizeof(buffer) - 1) buffer[k++] = (char)e; 
+                if (d == '\"') break;
             }
-            d = input(); 
-            if (d == EOF) break; 
+        }
+        else if (c == '\'') { // char literal
+            int d = fgetc(yyin);
+            if (d == EOF) break;
+            if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
+            if (d == '\\') {
+                int e = fgetc(yyin);
+                if (e == EOF) break;
+                if (k < sizeof(buffer) - 1) buffer[k++] = (char)e;
+            }
+            d = fgetc(yyin);
+            if (d == EOF) break;
             if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
         }
+
         if (k >= sizeof(buffer) - 2) break;
     }
+
     buffer[k] = '\0';
 
-    if (k > 0 && buffer[k - 1] == ')') buffer[k - 1]= '\0';
+    // Remove trailing )
+    if (k > 0 && buffer[k - 1] == ')') buffer[k - 1] = '\0';
 
+    // Remove leading (
     if (k > 0 && buffer[0] == '(') {
         size_t len = strlen(buffer);
-        if (len > 0) { memmove(buffer, buffer + 1, len); }
+        if (len > 0) memmove(buffer, buffer + 1, len);
     }
+
     return STRDUP(buffer);
 }
 
@@ -439,6 +458,21 @@ STR             \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
 // USER SUBROUTINE SECTIONS
 
 int main (int argc, char **argv) {
+    // Open input file if provided
+    if (argc > 1) {
+        yyin = fopen(argv[1], "r");
+        if (!yyin) {
+            perror("fopen");
+            exit(1);
+        }
+    } else {
+        yyin = stdin; // default to standard input
+    }
+
+    // Run the lexer (this fills symbol & constant tables)
+    yylex();
+
+    // Print symbol table
     printf("\n================= SYMBOL TABLE =================\n");
     printf("%-20s %-12s %-12s %-10s %-12s %-s\n",
         "Name","Type","Dimensions","Frequency","Return Type","Parameters Lists in Function call");
@@ -453,10 +487,13 @@ int main (int argc, char **argv) {
         );
     }
 
+    // Print constant table
     printf("\n================= CONSTANT TABLE ===============\n");
     printf("%-20s %-12s %-12s %-s\n",
         "Variable Name","Line Number","Value","Type");
     for (ConstantEntry* c = constants ; c != NULL ; c = c->next) {
         printf("%-20s %-12d %-12s %-s\n", c->name, c->lineNums[0], c->values, c->type);
     }
+
+    return 0;
 }
