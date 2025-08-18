@@ -667,6 +667,9 @@ int constantInd = 0;
 struct symbol *symbol_table[MAX_TABLE];
 struct constant *constant_table[MAX_TABLE];
 
+char currParamsList[512];
+char currArrayDims[256];
+
 // Symbol Table Helper Function
 void print_symbols(symbolEntry *symbol_table[]) 
 {
@@ -729,8 +732,8 @@ void add_symbol_to_table(char *lexeme, int tokenNumber) {
     }
 }
 
-#line 732 "lex.yy.c"
-#line 733 "lex.yy.c"
+#line 735 "lex.yy.c"
+#line 736 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -945,10 +948,10 @@ YY_DECL
 		}
 
 	{
-#line 143 ".\\lexicalAnalyser.l"
+#line 146 ".\\lexicalAnalyser.l"
 
 
-#line 951 "lex.yy.c"
+#line 954 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -1017,166 +1020,215 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 145 ".\\lexicalAnalyser.l"
+#line 148 ".\\lexicalAnalyser.l"
 {return KEYWORD;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 146 ".\\lexicalAnalyser.l"
+#line 149 ".\\lexicalAnalyser.l"
 {return KEYWORD;}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 147 ".\\lexicalAnalyser.l"
+#line 150 ".\\lexicalAnalyser.l"
 {return KEYWORD;}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 149 ".\\lexicalAnalyser.l"
+#line 152 ".\\lexicalAnalyser.l"
 {return PREPROCESSOR;}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 150 ".\\lexicalAnalyser.l"
+#line 153 ".\\lexicalAnalyser.l"
 {return HEADERDIRECTORY;}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 152 ".\\lexicalAnalyser.l"
+#line 155 ".\\lexicalAnalyser.l"
 {return IDENTIFIER;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 153 ".\\lexicalAnalyser.l"
-{return FUNCTION;}
+#line 156 ".\\lexicalAnalyser.l"
+{
+    char buf[512];
+    int i = 0;
+    int c;
+    int paren_level = 1;   // Already saw the first "("
+    
+    // Clear parameter buffer
+    currParamsList[0] = '\0';
+
+    while ((c = input()) != 0 && paren_level > 0) {
+        if (c == '(') {
+            paren_level++;
+        } else if (c == ')') {
+            paren_level--;
+            if (paren_level == 0) break; // stop at matching ')'
+        }
+        if (paren_level > 0 && i < 512 - 1) {
+            buf[i++] = (char)c;
+        }
+    }
+    buf[i] = '\0';
+    strcpy(currParamsList, buf);
+
+    //printf("Function params: %s\n", currParamsList);
+    return FUNCTION;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 154 ".\\lexicalAnalyser.l"
-{return ARRAY;}
+#line 182 ".\\lexicalAnalyser.l"
+{
+    char buf[256];
+    int i = 0;
+    int c;
+
+    buf[i++] = '[';  // first [ already matched
+
+    while ((c = input()) != 0) {
+        buf[i++] = (char)c;
+
+        if (c == ';' || c == '=') {
+            buf[i - 1] = '\0';   // overwrite ; or = with string terminator
+            break;
+        }
+
+        if (i >= 256 - 1) {
+            buf[i] = '\0';
+            break; // avoid overflow
+        }
+    }
+
+    strcpy(currArrayDims, buf);
+    //printf("Array dimensions: %s\n", currArrayDims);
+
+    return ARRAY;
+}
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 156 ".\\lexicalAnalyser.l"
+#line 209 ".\\lexicalAnalyser.l"
 {return UNMATCHEDSTRING;}  
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 157 ".\\lexicalAnalyser.l"
+#line 210 ".\\lexicalAnalyser.l"
 {return OPENCURLY;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 158 ".\\lexicalAnalyser.l"
+#line 211 ".\\lexicalAnalyser.l"
 {return CLOSEDCURLY;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 159 ".\\lexicalAnalyser.l"
+#line 212 ".\\lexicalAnalyser.l"
 {return OPENPAREN;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 160 ".\\lexicalAnalyser.l"
+#line 213 ".\\lexicalAnalyser.l"
 {return CLOSEDPAREN;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 161 ".\\lexicalAnalyser.l"
+#line 214 ".\\lexicalAnalyser.l"
 {return OPENREC;}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 162 ".\\lexicalAnalyser.l"
+#line 215 ".\\lexicalAnalyser.l"
 {return CLOSEDREC;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 164 ".\\lexicalAnalyser.l"
+#line 217 ".\\lexicalAnalyser.l"
 {return OPERATOR;}      
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 165 ".\\lexicalAnalyser.l"
+#line 218 ".\\lexicalAnalyser.l"
 {return COMMA;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 166 ".\\lexicalAnalyser.l"
+#line 219 ".\\lexicalAnalyser.l"
 {return SEMICOLON;}
 	YY_BREAK
 case 19:
 /* rule 19 can match eol */
 YY_RULE_SETUP
-#line 168 ".\\lexicalAnalyser.l"
+#line 221 ".\\lexicalAnalyser.l"
 { return LITERAL; }   // string
 	YY_BREAK
 case 20:
 /* rule 20 can match eol */
 YY_RULE_SETUP
-#line 169 ".\\lexicalAnalyser.l"
+#line 222 ".\\lexicalAnalyser.l"
 { return LITERAL; }   // char
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 170 ".\\lexicalAnalyser.l"
+#line 223 ".\\lexicalAnalyser.l"
 { return FRACTION; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 171 ".\\lexicalAnalyser.l"
+#line 224 ".\\lexicalAnalyser.l"
 { return NEGFRACTION; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 172 ".\\lexicalAnalyser.l"
+#line 225 ".\\lexicalAnalyser.l"
 { return INTEGER; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 173 ".\\lexicalAnalyser.l"
+#line 226 ".\\lexicalAnalyser.l"
 { return NEGINTEGER; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 175 ".\\lexicalAnalyser.l"
+#line 228 ".\\lexicalAnalyser.l"
 {return SINGLELINECOMMENT;}
 	YY_BREAK
 case 26:
 /* rule 26 can match eol */
 YY_RULE_SETUP
-#line 176 ".\\lexicalAnalyser.l"
+#line 229 ".\\lexicalAnalyser.l"
 {return MULTILINECOMMENT;}
 	YY_BREAK
 case 27:
 /* rule 27 can match eol */
 YY_RULE_SETUP
-#line 177 ".\\lexicalAnalyser.l"
+#line 230 ".\\lexicalAnalyser.l"
 {return UNMATCHEDCOMMENT;}
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 178 ".\\lexicalAnalyser.l"
+#line 231 ".\\lexicalAnalyser.l"
 {return UNMATCHEDCOMMENTCLOSED;}
 	YY_BREAK
 case 29:
 /* rule 29 can match eol */
 YY_RULE_SETUP
-#line 180 ".\\lexicalAnalyser.l"
+#line 233 ".\\lexicalAnalyser.l"
 {;}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 181 ".\\lexicalAnalyser.l"
+#line 234 ".\\lexicalAnalyser.l"
 {printf("ERR_UNEXPECTED_CHARACTER: On Line Number %d found %s\n",yylineno, yytext);}
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 183 ".\\lexicalAnalyser.l"
+#line 236 ".\\lexicalAnalyser.l"
 ECHO;
 	YY_BREAK
-#line 1179 "lex.yy.c"
+#line 1231 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2152,7 +2204,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 183 ".\\lexicalAnalyser.l"
+#line 236 ".\\lexicalAnalyser.l"
 
 
 int yywrap(void){
@@ -2214,7 +2266,7 @@ int main()
             int rtInd = 0;
             char name[50] = "";
             int nameInd = 0;
-            char parameters[200] = "";
+            char parameters[200];
             int parInd = 0;
             int ind = 0;
 
@@ -2245,34 +2297,14 @@ int main()
                 ind++;
             }
 
-            // Extract everything inside (...)
-            while (lexeme[ind] != '\0' && lexeme[ind] != ')') 
-            {
-                parameters[parInd++] = lexeme[ind];
-                ind++;
-            }
-            parameters[parInd] = '\0';
-
-            // Now tokenize parameter list
-            char paramList[10][50];  // allow up to 10 params, 50 chars each
-            int paramCount = 0;
-
-            char *token = strtok(parameters, ",");
-            while (token != NULL && paramCount < 10) {
-                // Trim leading spaces
-                while (*token == ' ') token++;
-                strcpy(paramList[paramCount++], token);
-                token = strtok(NULL, ",");
-            }
-
-            // Save function entry in symbol table (optional, since already added above)
+            // Save function entry in symbol table
             strcpy(s->name, name);
             strcpy(s->token, tokens[tokenNumber - 1]);
             strcpy(s->dimensions, "-");
             s->frequency = 1;
             strcpy(s->returnType, returnType);
 
-            strcpy(s->parametersList, parameters);
+            strcpy(s->parametersList, currParamsList);
 
             s->type = tokenNumber;
             symbol_table[symbolInd++] = s;
@@ -2284,7 +2316,7 @@ int main()
             int typeInd = 0;
             char name[64] = "";
             int nameInd = 0;
-            char dims[128] = "";
+            char dims[256] = "";
             int dimsInd = 0;
             int ind = 0;
 
@@ -2303,24 +2335,9 @@ int main()
             }
             name[nameInd] = '\0';
 
-            // Extract all dimensions (from first '[' to end)
-            while (lexeme[ind] != '\0' && lexeme[ind] == '[') {
-                // Copy '['
-                dims[dimsInd++] = lexeme[ind++];
-                // Copy everything until ']'
-                while (lexeme[ind] != '\0' && lexeme[ind] != ']') {
-                    dims[dimsInd++] = lexeme[ind++];
-                }
-                // Copy ']'
-                if (lexeme[ind] == ']') {
-                    dims[dimsInd++] = lexeme[ind++];
-                }
-            }
-            dims[dimsInd] = '\0';
-
             strcpy(s->name, name);
             strcpy(s->token, tokens[tokenNumber - 1]);
-            strcpy(s->dimensions, dims);
+            strcpy(s->dimensions, currArrayDims);
             s->frequency = 1;
             strcpy(s->returnType, type);
             strcpy(s->parametersList, "-");

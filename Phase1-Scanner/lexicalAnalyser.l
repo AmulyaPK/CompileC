@@ -63,6 +63,9 @@ int constantInd = 0;
 struct symbol *symbol_table[MAX_TABLE];
 struct constant *constant_table[MAX_TABLE];
 
+char currParamsList[512];
+char currArrayDims[256];
+
 // Symbol Table Helper Function
 void print_symbols(symbolEntry *symbol_table[]) 
 {
@@ -150,8 +153,58 @@ STR             \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
 "<"[_a-zA-Z/]*".h>"    {return HEADERDIRECTORY;}
 
 {IDENTIFIERS} {return IDENTIFIER;}
-{DATATYPES}{WS}+{IDENTIFIERS}{WS}*"(" {return FUNCTION;}
-{DATATYPES}{WS}+{IDENTIFIERS}{WS}*"[" {return ARRAY;}
+{DATATYPES}{WS}+{IDENTIFIERS}{WS}*"(" {
+    char buf[512];
+    int i = 0;
+    int c;
+    int paren_level = 1;   // Already saw the first "("
+    
+    // Clear parameter buffer
+    currParamsList[0] = '\0';
+
+    while ((c = input()) != 0 && paren_level > 0) {
+        if (c == '(') {
+            paren_level++;
+        } else if (c == ')') {
+            paren_level--;
+            if (paren_level == 0) break; // stop at matching ')'
+        }
+        if (paren_level > 0 && i < 512 - 1) {
+            buf[i++] = (char)c;
+        }
+    }
+    buf[i] = '\0';
+    strcpy(currParamsList, buf);
+
+    //printf("Function params: %s\n", currParamsList);
+    return FUNCTION;}
+
+{DATATYPES}{WS}+{IDENTIFIERS}{WS}*"[" {
+    char buf[256];
+    int i = 0;
+    int c;
+
+    buf[i++] = '[';  // first [ already matched
+
+    while ((c = input()) != 0) {
+        buf[i++] = (char)c;
+
+        if (c == ';' || c == '=') {
+            buf[i - 1] = '\0';   // overwrite ; or = with string terminator
+            break;
+        }
+
+        if (i >= 256 - 1) {
+            buf[i] = '\0';
+            break; // avoid overflow
+        }
+    }
+
+    strcpy(currArrayDims, buf);
+    //printf("Array dimensions: %s\n", currArrayDims);
+
+    return ARRAY;
+}
 
 \"(\\.|[^"\\])*   {return UNMATCHEDSTRING;}  
 "{"               {return OPENCURLY;}
@@ -241,7 +294,7 @@ int main()
             int rtInd = 0;
             char name[50] = "";
             int nameInd = 0;
-            char parameters[200] = "";
+            char parameters[200];
             int parInd = 0;
             int ind = 0;
 
@@ -272,34 +325,14 @@ int main()
                 ind++;
             }
 
-            // Extract everything inside (...)
-            while (lexeme[ind] != '\0' && lexeme[ind] != ')') 
-            {
-                parameters[parInd++] = lexeme[ind];
-                ind++;
-            }
-            parameters[parInd] = '\0';
-
-            // Now tokenize parameter list
-            char paramList[10][50];  // allow up to 10 params, 50 chars each
-            int paramCount = 0;
-
-            char *token = strtok(parameters, ",");
-            while (token != NULL && paramCount < 10) {
-                // Trim leading spaces
-                while (*token == ' ') token++;
-                strcpy(paramList[paramCount++], token);
-                token = strtok(NULL, ",");
-            }
-
-            // Save function entry in symbol table (optional, since already added above)
+            // Save function entry in symbol table
             strcpy(s->name, name);
             strcpy(s->token, tokens[tokenNumber - 1]);
             strcpy(s->dimensions, "-");
             s->frequency = 1;
             strcpy(s->returnType, returnType);
 
-            strcpy(s->parametersList, parameters);
+            strcpy(s->parametersList, currParamsList);
 
             s->type = tokenNumber;
             symbol_table[symbolInd++] = s;
@@ -311,7 +344,7 @@ int main()
             int typeInd = 0;
             char name[64] = "";
             int nameInd = 0;
-            char dims[128] = "";
+            char dims[256] = "";
             int dimsInd = 0;
             int ind = 0;
 
@@ -330,24 +363,9 @@ int main()
             }
             name[nameInd] = '\0';
 
-            // Extract all dimensions (from first '[' to end)
-            while (lexeme[ind] != '\0' && lexeme[ind] == '[') {
-                // Copy '['
-                dims[dimsInd++] = lexeme[ind++];
-                // Copy everything until ']'
-                while (lexeme[ind] != '\0' && lexeme[ind] != ']') {
-                    dims[dimsInd++] = lexeme[ind++];
-                }
-                // Copy ']'
-                if (lexeme[ind] == ']') {
-                    dims[dimsInd++] = lexeme[ind++];
-                }
-            }
-            dims[dimsInd] = '\0';
-
             strcpy(s->name, name);
             strcpy(s->token, tokens[tokenNumber - 1]);
-            strcpy(s->dimensions, dims);
+            strcpy(s->dimensions, currArrayDims);
             s->frequency = 1;
             strcpy(s->returnType, type);
             strcpy(s->parametersList, "-");
