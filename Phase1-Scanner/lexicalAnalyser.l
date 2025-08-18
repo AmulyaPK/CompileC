@@ -10,6 +10,7 @@
 #define MAX_NAME 1024 
 #define MAX_TABLE 256
 
+// Token defination map
 char tokens[100][100] = {
     "KEYWORD",
     "OPERATOR", 
@@ -38,6 +39,92 @@ char tokens[100][100] = {
     "ARRAY"
 };
 
+// Symbol Table struct definition
+typedef struct symbol{
+    char name[MAX_NAME]; // symbol name
+    char token[MAX_SYM]; // symbol type
+    char dimensions[256];
+    int frequency;
+    char returnType[20];
+    char parametersList[512];
+    int type;  // token number
+} symbolEntry;
+
+// Constant Table struct definition
+typedef struct constant {
+    char name[MAX_NAME];
+    char token[MAX_SYM];
+    int lineNum;
+} constantEntry;
+
+int symbolInd = 0;
+int constantInd = 0;
+
+struct symbol *symbol_table[MAX_TABLE];
+struct constant *constant_table[MAX_TABLE];
+
+// Symbol Table Helper Function
+void print_symbols(symbolEntry *symbol_table[]) 
+{
+    printf("\n<===== SYMBOL TABLE ======>\n");
+
+    printf("%-30s %-20s %-12s %-6s %-12s %-20s\n", 
+           "Name", "Token", "Dimensions", "Freq", "ReturnType", "Parameters");
+
+    printf("-----------------------------------------------------------------------------------------------\n");
+
+    for (int i = 0 ; i < symbolInd ; i++) {
+        printf("%-30s %-20s %-12s %-6d %-12s %-20s\n", 
+            symbol_table[i]->name, 
+            symbol_table[i]->token, 
+            symbol_table[i]->dimensions, 
+            symbol_table[i]->frequency, 
+            symbol_table[i]->returnType, 
+            symbol_table[i]->parametersList
+        );
+    }
+    printf("-----------------------------------------------------------------------------------------------\n\n");
+}
+
+
+// Constant Table Helper Function
+void print_constant(constantEntry *constant_table[]) 
+{
+    printf("<====== CONSTANTS TABLE =====>\n");
+    printf("%-30s %-20s %-12s\n", "Name", "Token", "LineNumber");
+    printf("-------------------------------------------------------------\n");
+    for (int i = 0 ; i < constantInd ; i++) {
+        printf("%-30s %-20s %-12d\n", 
+            constant_table[i]->name, 
+            constant_table[i]->token, 
+            constant_table[i]->lineNum);
+    }
+    printf("-------------------------------------------------------------\n\n");
+} 
+
+// Adds a symbol to the symbol table if not already present, else increments frequency
+void add_symbol_to_table(char *lexeme, int tokenNumber) {
+    int found = 0;
+    for (int i = 0 ; i < symbolInd ; i++) {
+        if (strcmp(symbol_table[i]->name, lexeme) == 0) {
+            symbol_table[i]->frequency++;
+            found = 1;
+            break;
+        }
+    }
+    if (found == 0) {
+        symbolEntry *s = malloc(sizeof(symbolEntry));
+        strcpy(s->name, lexeme);
+        strcpy(s->token, tokens[tokenNumber - 1]);
+        strcpy(s->dimensions, "-");
+        s->frequency = 1;
+        strcpy(s->returnType, "-");
+        strcpy(s->parametersList, "-");
+        s->type = tokenNumber;
+        symbol_table[symbolInd++] = s;
+    }
+}
+
 %}
 
 WS      [ \t\r\f\v]+
@@ -58,11 +145,14 @@ STR             \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
 "auto"|"const"|"break"|"goto"|"continue"|"switch"|"case"|"do"|"default"|"double"              {return KEYWORD;}
 "register"|"static"|"while"|"volatile"|"extern"|"short"|"unsigned"|"signed"|"int"|"char"      {return KEYWORD;}
 "float"|"void"|"bool"|"main"|"for"|"return"|"sizeof"|"struct"|"union"|"typedef"|"if"|"else"   {return KEYWORD;}
+
 \#"include"|\#"define" {return PREPROCESSOR;}
 "<"[_a-zA-Z/]*".h>"    {return HEADERDIRECTORY;}
+
 {IDENTIFIERS} {return IDENTIFIER;}
 {DATATYPES}{WS}+{IDENTIFIERS}{WS}*"(" {return FUNCTION;}
 {DATATYPES}{WS}+{IDENTIFIERS}{WS}*"[" {return ARRAY;}
+
 \"(\\.|[^"\\])*   {return UNMATCHEDSTRING;}  
 "{"               {return OPENCURLY;}
 "}"               {return CLOSEDCURLY;}
@@ -70,97 +160,71 @@ STR             \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
 ")"               {return CLOSEDPAREN;}
 "["               {return OPENREC;}
 "]"               {return CLOSEDREC;}
+
 "++"|"--"|"?"|":"|"="|"+"|"-"|"*"|"/"|">"|"<"|">="|"<="|"=="|"!="|"&&"|"||"|"!"|"->"|"&"|"%"|"+="|"/="|"-="|"*="  {return OPERATOR;}      
 ","           {return COMMA;}
 ";"           {return SEMICOLON;}
+
 \"([^\\\"]|\\.)*\"      { return LITERAL; }   // string
 \'([^\\\']|\\.)\'       { return LITERAL; }   // char
 [0-9]+\.[0-9]+          { return FRACTION; }
 -[0-9]+\.[0-9]+         { return NEGFRACTION; }
 [0-9]+                  { return INTEGER; }
 -[0-9]+                 { return NEGINTEGER; }
+
 \/\/(.*)      {return SINGLELINECOMMENT;}
 "/*"([^*]|\*+[^*/])*\*+"/" {return MULTILINECOMMENT;}
 "/*"([^*]|\*+[^*/])*       {return UNMATCHEDCOMMENT;}
 "*/"                       {return UNMATCHEDCOMMENTCLOSED;}
+
 [ \n\t]     {;}
 .           {printf("ERR_UNEXPECTED_CHARACTER: On Line Number %d found %s\n",yylineno, yytext);}
 
 %%
 
-
-
 int yywrap(void){
     return 1;
-}
+}  
 
-typedef struct symbol{
-    char name[MAX_NAME]; // symbol name
-    char token[MAX_SYM]; // symbol type
-    char dimensions[256];
-    int frequency;
-    char returnType[20];
-    char parametersList[512];
-    int type;  // token number
-} symbolEntry;
-
-typedef struct constant {
-    char name[MAX_NAME];
-    char token[MAX_SYM];
-    int lineNum;
-} constantEntry;
-
-int symbolInd = 0;
-int constantInd = 0;
-struct symbol *symbol_table[MAX_TABLE];
-struct constant *constant_table[MAX_TABLE];
-
-void print_symbols(symbolEntry *symbol_table[]) {
-    printf("<===== SYMBOL TABLE ======>\n");
-    printf("Name\tToken\tDimensions\tfreq\treturntype\tparameters\ttype\n");
-    for (int i = 0 ; i < symbolInd ; i++) {
-        printf("%s\t%s\t%s\t%d\t%s\t%s\t%d\n", symbol_table[i]->name, symbol_table[i]->token, symbol_table[i]->dimensions, symbol_table[i]->frequency, symbol_table[i]->returnType, symbol_table[i]->parametersList);
-    }
-    printf("\n");
-}
-
-void print_constant(constantEntry *constant_table[]) {
-    printf("<====== CONSTANTS TABLE =====>\n");
-    printf("Name\tToken\tlineNumber\n");
-    for (int i = 0 ; i < constantInd ; i++) {
-        printf("%s\t%s\t%d\n", constant_table[i]->name, constant_table[i]->token, constant_table[i]->lineNum);
-    }
-    printf("\n");
-}   
-
-int main(){
+int main()
+{
     FILE *file;
     file =  fopen("test-cases/input1.c","r");
-    if(file)yyin = file;
+    if(file) 
+        yyin = file;
     
-    for (int i=0;i<MAX_TABLE;i++){
+    for (int i = 0; i < MAX_TABLE; i++)
+    {
         symbol_table[i] = NULL;
         constant_table[i] = NULL;
     }
 
     char *lexeme;
-    int tokenNumber = yylex();
+    int tokenNumber = yylex(); // Start scanning
 
-    while (tokenNumber){
+    while (tokenNumber) 
+    {
         lexeme = strdup(yytext);
 
         symbolEntry *s = malloc(sizeof(symbolEntry));
         constantEntry *c = malloc(sizeof(constantEntry));
 
+        // Literals
         if (tokenNumber == 6) {
             printf("On line number %d found literal %s\n", yylineno, lexeme);
         }
-        if (tokenNumber == 20 || tokenNumber == 21 || tokenNumber == 22 || tokenNumber == 23) { // Constants table
+
+        // Constants
+        if (tokenNumber == 20 || tokenNumber == 21 || tokenNumber == 22 || tokenNumber == 23) 
+        { 
+            // Constants table
             strcpy(c->name, lexeme);
             strcpy(c->token, tokens[tokenNumber - 1]);
             c->lineNum = yylineno;
             constant_table[constantInd++] = c;
         }
+
+        // Error Handling
         else if (tokenNumber == 17) {
             printf("ERR_UNMATCHED_COMMENT: On Line Number %d found %s\n",yylineno, lexeme);
         }
@@ -170,60 +234,117 @@ int main(){
         else if (tokenNumber == 19) {
             printf("ERR_UNMATCHED_COMMENT_DUE_TO_NESTS: On Line NUmber %d found %s\n",yylineno,lexeme);
         }
-        else if (tokenNumber == 24) { // Functions
-            char returnType[10];
+
+        // Functions
+        else if (tokenNumber == 24) { 
+            char returnType[50] = "";
             int rtInd = 0;
-            char name[20];
+            char name[50] = "";
             int nameInd = 0;
-            char parameters [50];
+            char parameters[200] = "";
             int parInd = 0;
             int ind = 0;
-            while (lexeme[ind] != '\0' && lexeme[ind] != ' ') {
+
+            // Extract return type
+            while (lexeme[ind] != '\0' && lexeme[ind] != ' ') 
+            {
                 returnType[rtInd++] = lexeme[ind];
                 ind++;
             }
+            returnType[rtInd] = '\0';
+            add_symbol_to_table(returnType, 1); 
+
+            // Skip spaces
             while (lexeme[ind] != '\0' && lexeme[ind] == ' ') ind++;
+
+            // Extract function name
             while (lexeme[ind] != '\0' && lexeme[ind] != ' ' && lexeme[ind] != '(') {
                 name[nameInd++] = lexeme[ind];
                 ind++;
             }
+            name[nameInd] = '\0';
+
+            // Find opening parenthesis
             while (lexeme[ind] != '\0' && lexeme[ind] != '(') ind++;
-            ind++;
-            while (lexeme[ind] != '\0' && lexeme[ind] != ')') {
+            if (lexeme[ind] == '(') 
+            {
+                add_symbol_to_table("(", 10); 
+                ind++;
+            }
+
+            // Extract everything inside (...)
+            while (lexeme[ind] != '\0' && lexeme[ind] != ')') 
+            {
                 parameters[parInd++] = lexeme[ind];
                 ind++;
             }
+            parameters[parInd] = '\0';
+
+            // Now tokenize parameter list
+            char paramList[10][50];  // allow up to 10 params, 50 chars each
+            int paramCount = 0;
+
+            char *token = strtok(parameters, ",");
+            while (token != NULL && paramCount < 10) {
+                // Trim leading spaces
+                while (*token == ' ') token++;
+                strcpy(paramList[paramCount++], token);
+                token = strtok(NULL, ",");
+            }
+
+            // Save function entry in symbol table (optional, since already added above)
             strcpy(s->name, name);
             strcpy(s->token, tokens[tokenNumber - 1]);
             strcpy(s->dimensions, "-");
             s->frequency = 1;
             strcpy(s->returnType, returnType);
+
             strcpy(s->parametersList, parameters);
+
             s->type = tokenNumber;
             symbol_table[symbolInd++] = s;
         }
-        else if (tokenNumber == 25) { // Arrays
-            char type[10];
+
+        // Arrays
+        else if (tokenNumber == 25) { 
+            char type[32] = "";
             int typeInd = 0;
-            char name[30];
+            char name[64] = "";
             int nameInd = 0;
-            char dims[50];
+            char dims[128] = "";
             int dimsInd = 0;
             int ind = 0;
+
+            // Extract type (until first space)
             while (lexeme[ind] != '\0' && lexeme[ind] != ' ') {
-                type[typeInd++] = lexeme[ind];
-                ind++;
+                type[typeInd++] = lexeme[ind++];
             }
+            type[typeInd] = '\0';
+
+            // Skip spaces
             while (lexeme[ind] == ' ' && lexeme[ind] != '\0') ind++;
+
+            // Extract name (until first '[')
             while (lexeme[ind] != '\0' && lexeme[ind] != '[') {
-                name[nameInd++] = lexeme[ind];
-                ind++;
+                name[nameInd++] = lexeme[ind++];
             }
-            while (lexeme[ind] != '[' && lexeme[ind] != '\0') ind++;
-            while (lexeme[ind] != '\0') {
-                dims[dimsInd++] = lexeme[ind];
-                ind++;
+            name[nameInd] = '\0';
+
+            // Extract all dimensions (from first '[' to end)
+            while (lexeme[ind] != '\0' && lexeme[ind] == '[') {
+                // Copy '['
+                dims[dimsInd++] = lexeme[ind++];
+                // Copy everything until ']'
+                while (lexeme[ind] != '\0' && lexeme[ind] != ']') {
+                    dims[dimsInd++] = lexeme[ind++];
+                }
+                // Copy ']'
+                if (lexeme[ind] == ']') {
+                    dims[dimsInd++] = lexeme[ind++];
+                }
             }
+            dims[dimsInd] = '\0';
+
             strcpy(s->name, name);
             strcpy(s->token, tokens[tokenNumber - 1]);
             strcpy(s->dimensions, dims);
@@ -233,7 +354,10 @@ int main(){
             s->type = tokenNumber;
             symbol_table[symbolInd++] = s;
         }
+
+        // Normal Identifiers
         else {
+            // Check if identifier already exist
             int found = 0;
             for (int i = 0 ; i < symbolInd ; i++) {
                 if (strcmp(symbol_table[i]->name, lexeme) == 0) {
@@ -242,6 +366,8 @@ int main(){
                     break;
                 }
             }
+
+            // Add new identifier to symbol table
             if (found == 0) {
                 strcpy(s->name, lexeme);
                 strcpy(s->token, tokens[tokenNumber - 1]);
@@ -257,7 +383,10 @@ int main(){
         printf("On Line Number %d found token: %s - %s\n",yylineno, tokens[tokenNumber - 1], lexeme);
        tokenNumber = yylex();
     }
+
+    printf("\n\n");
     print_symbols(symbol_table);
     print_constant(constant_table);
+
     return 0;
 }
