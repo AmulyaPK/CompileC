@@ -8,6 +8,7 @@ int main () {
     int x = 5;
     int y = 10;
     int arr[10][50];
+    char str[20];
     int sum = x + y;
     char c = 'a';
     printf("%d\n", sum);

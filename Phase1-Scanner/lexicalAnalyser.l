@@ -134,7 +134,6 @@ void add_symbol_to_table(char *lexeme, int tokenNumber) {
 
 WS          [ \t\r\f\v]+
 DATATYPES   (int|char|float|double|void|bool)
-KEYWORDS    (auto|break|const|goto|continue|switch|case|do|default|double|register|static|while|volatile|extern|short|unsigned|main|for|return|sizeof|struct|union|typedef|if|else)
 IDENTIFIERS [A-Za-z_][A-Za-z0-9_]*
 DEC         (0|[1-9][0-9]*)
 OCT         0[0-7]+
@@ -325,6 +324,33 @@ int main()
 
             s->type = tokenNumber;
             symbol_table[symbolInd++] = s;
+
+            //Add parameters also to symbol table
+            char paramsCopy[512];
+            strcpy(paramsCopy, currParamsList);
+
+            char *param = strtok(paramsCopy, ",");
+            while (param != NULL) {
+                // Trim leading spaces
+                while (*param == ' ' || *param == '\t') param++;
+
+                // Extract parameter name (assume format: "type name" or just "name")
+                char type[64] = "", name[64] = "";
+                sscanf(param, "%s %s", type, name);
+
+                // If only one word, treat as name
+                if (strlen(name) == 0 && strlen(type) > 0) {
+                    strcpy(name, type);
+                }
+
+                if (strlen(name) > 0) {
+                    add_symbol_to_table(type, 1);
+                    add_symbol_to_table(name, 3); 
+                }
+
+                param = strtok(NULL, ",");
+            }
+            add_symbol_to_table(")", 11); 
         }
 
         // Arrays
@@ -342,6 +368,7 @@ int main()
                 type[typeInd++] = lexeme[ind++];
             }
             type[typeInd] = '\0';
+            add_symbol_to_table(type, 1);
 
             // Skip spaces
             while (lexeme[ind] == ' ' && lexeme[ind] != '\0') ind++;
@@ -351,6 +378,43 @@ int main()
                 name[nameInd++] = lexeme[ind++];
             }
             name[nameInd] = '\0';
+
+            // Extract all [ and ] present in dimensions
+            for (int i = 0; currArrayDims[i] != '\0'; i++) {
+                if (currArrayDims[i] == '[') {
+                    add_symbol_to_table("[", 12); // 12 is OPENREC in your tokens array
+                } else if (currArrayDims[i] == ']') {
+                    add_symbol_to_table("]", 13); // 13 is CLOSEDREC in your tokens array
+                }
+            }
+
+            // extract all constants present in dimensions
+            char dimBuf[256];
+            strcpy(dimBuf, currArrayDims);
+            char *p = dimBuf;
+            while (*p) {
+                if (*p == '[') {
+                    p++;
+                    char num[32] = "";
+                    int ni = 0;
+                    while (*p && *p != ']' && ni < 31) {
+                        if (*p >= '0' && *p <= '9') {
+                            num[ni++] = *p;
+                        }
+                        p++;
+                    }
+                    num[ni] = '\0';
+                    if (strlen(num) > 0) {
+                        constantEntry *c = malloc(sizeof(constantEntry));
+                        strcpy(c->name, num);
+                        strcpy(c->token, "INTEGER");
+                        c->lineNum = yylineno;
+                        constant_table[constantInd++] = c;
+                    }
+                } else {
+                    p++;
+                }
+            }
 
             strcpy(s->name, name);
             strcpy(s->token, tokens[tokenNumber - 1]);
