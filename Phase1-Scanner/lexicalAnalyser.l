@@ -138,12 +138,12 @@ KEYWORDS    (auto|break|const|goto|continue|switch|case|do|default|double|regist
 IDENTIFIERS [A-Za-z_][A-Za-z0-9_]*
 DEC         (0|[1-9][0-9]*)
 OCT         0[0-7]+
-HEX             0[xX][0-9a-fA-F]+
-EXP             ([eE][+-]?[0-9]+)
-FLOAT1          ([0-9]+\\.[0-9]*{EXP}?|[0-9]+{EXP})
-FLOAT2          (\\.[0-9]+{EXP}?)
-CHAR            \\'([^\\\\'\\n]|\\\\.)\\'
-STR             \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
+HEX         0[xX][0-9a-fA-F]+
+EXP         ([eE][+-]?[0-9]+)
+FLOAT1      ([0-9]+\\.[0-9]*{EXP}?|[0-9]+{EXP})
+FLOAT2      (\\.[0-9]+{EXP}?)
+CHAR        \\'([^\\\\'\\n]|\\\\.)\\'
+STR         \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
 
 %%
 
@@ -151,10 +151,10 @@ STR             \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
 "register"|"static"|"while"|"volatile"|"extern"|"short"|"unsigned"|"signed"|"int"|"char"      {return KEYWORD;}
 "float"|"void"|"bool"|"main"|"for"|"return"|"sizeof"|"struct"|"union"|"typedef"|"if"|"else"   {return KEYWORD;}
 
-\#"include"|\#"define" {return PREPROCESSOR;}
-"<"[_a-zA-Z/]*".h>"    {return HEADERDIRECTORY;}
+\#"include"|\#"define"  {return PREPROCESSOR;}
+"<"[_a-zA-Z/]*".h>"     {return HEADERDIRECTORY;}
 
-{IDENTIFIERS} {return IDENTIFIER;}
+{IDENTIFIERS}           {return IDENTIFIER;}
 {DATATYPES}{WS}+{IDENTIFIERS}{WS}*"(" {
     char buf[512];
     int i = 0;
@@ -177,9 +177,8 @@ STR             \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
     }
     buf[i] = '\0';
     strcpy(currParamsList, buf);
-
-    //printf("Function params: %s\n", currParamsList);
-    return FUNCTION;}
+    return FUNCTION;
+}
 
 {DATATYPES}{WS}+{IDENTIFIERS}{WS}*"[" {
     char buf[256];
@@ -203,55 +202,47 @@ STR             \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
     }
 
     strcpy(currArrayDims, buf);
-    //printf("Array dimensions: %s\n", currArrayDims);
-
     return ARRAY;
 }
 
-\"(\\.|[^"\\])*   {return UNMATCHEDSTRING;}  
-"{"               {return OPENCURLY;}
-"}"               {return CLOSEDCURLY;}
-"("               {return OPENPAREN;}
-")"               {return CLOSEDPAREN;}
-"["               {return OPENREC;}
-"]"               {return CLOSEDREC;}
+\"(\\.|[^"\\])* {return UNMATCHEDSTRING;}  
+"{"             {return OPENCURLY;}
+"}"             {return CLOSEDCURLY;}
+"("             {return OPENPAREN;}
+")"             {return CLOSEDPAREN;}
+"["             {return OPENREC;}
+"]"             {return CLOSEDREC;}
 
 "++"|"--"|"?"|":"|"="|"+"|"-"|"*"|"/"|">"|"<"|">="|"<="|"=="|"!="|"&&"|"||"|"!"|"->"|"&"|"%"|"+="|"/="|"-="|"*="  {return OPERATOR;}      
-","           {return COMMA;}
-";"           {return SEMICOLON;}
+","             {return COMMA;}
+";"             {return SEMICOLON;}
 
 \"([^\\\"]|\\.)*\"      { return STRING; }   // string
 \'([^\\\']|\\.)\'       { return LITERAL; }   // char
-{DEC} { return INTEGER; }
-{OCT} { return OCT; }
-{HEX} { return HEX; }
-{EXP} { return EXP; }
-{FLOAT1} { return FLOAT1; }
-{FLOAT2} { return FLOAT2; }
+{DEC}           { return INTEGER; }
+{OCT}           { return OCT; }
+{HEX}           { return HEX; }
+{EXP}           { return EXP; }
+{FLOAT1}        { return FLOAT1; }
+{FLOAT2}        { return FLOAT2; }
 
-\/\/(.*)      {return SINGLELINECOMMENT;}
-"/*"([^*]|\*+[^*/])*\*+"/" {return MULTILINECOMMENT;}
-"/*"([^*]|\*+[^*/])*       {return UNMATCHEDCOMMENT;}
-"*/"                       {return UNMATCHEDCOMMENTCLOSED;}
+\/\/(.*)                    { return SINGLELINECOMMENT; }
+"/*"([^*]|\*+[^*/])*\*+"/"  { return MULTILINECOMMENT; }
+"/*"([^*]|\*+[^*/])*        { return UNMATCHEDCOMMENT; }
+"*/"                        { return UNMATCHEDCOMMENTCLOSED; }
 
-[ \n\t]     {;}
-.           {printf("ERR_UNEXPECTED_CHARACTER: On Line Number %d found %s\n",yylineno, yytext);}
+[ \n\t]         {;}
+.               { printf("ERR_UNEXPECTED_CHARACTER: On Line Number %d found %s\n", yylineno, yytext); }
 
 %%
-
-int yywrap(void){
-    return 1;
-}  
 
 int main()
 {
     FILE *file;
-    file =  fopen("test-cases/input1.c","r");
-    if(file) 
-        yyin = file;
+    file = fopen("test-cases/input1.c", "r");
+    if (file) yyin = file;
     
-    for (int i = 0; i < MAX_TABLE; i++)
-    {
+    for (int i = 0 ; i < MAX_TABLE ; i++) {
         symbol_table[i] = NULL;
         constant_table[i] = NULL;
     }
@@ -259,8 +250,7 @@ int main()
     char *lexeme;
     int tokenNumber = yylex(); // Start scanning
 
-    while (tokenNumber) 
-    {
+    while (tokenNumber) {
         lexeme = strdup(yytext);
 
         symbolEntry *s = malloc(sizeof(symbolEntry));
@@ -269,7 +259,7 @@ int main()
         // Constants and literals
         if (tokenNumber == 6|| tokenNumber == 28 || tokenNumber == 20 || tokenNumber == 21 || tokenNumber == 22 || tokenNumber == 23 || tokenNumber == 24 || tokenNumber == 25) 
         { 
-            // Constants table
+            // Adding new entry into constant table
             strcpy(c->name, lexeme);
             strcpy(c->token, tokens[tokenNumber - 1]);
             c->lineNum = yylineno;
@@ -398,12 +388,17 @@ int main()
         }
 
         printf("On Line Number %d found token: %s - %s\n",yylineno, tokens[tokenNumber - 1], lexeme);
-       tokenNumber = yylex();
+        tokenNumber = yylex();
     }
 
     printf("\n\n");
+    
     print_symbols(symbol_table);
     print_constant(constant_table);
 
     return 0;
 }
+
+int yywrap(void){
+    return 1;
+}  
