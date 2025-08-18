@@ -235,11 +235,17 @@ STR         \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
 
 %%
 
-int main()
+int main(int argc, char **argv)
 {
-    FILE *file;
-    file = fopen("test-cases/input1.c", "r");
-    if (file) yyin = file;
+    if (argc > 1) {
+        yyin = fopen(argv[1], "r");
+        if (!yyin) {
+            perror("fopen");
+            return 1;
+        }
+    } else {
+        yyin = stdin;   // if no file, read from stdin
+    }
     
     for (int i = 0 ; i < MAX_TABLE ; i++) {
         symbol_table[i] = NULL;
