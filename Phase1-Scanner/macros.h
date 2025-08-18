@@ -17,9 +17,12 @@
 #define UNMATCHEDCOMMENT 17
 #define UNMATCHEDSTRING 18
 #define UNMATCHEDCOMMENTCLOSED 19
-#define FRACTION 20
-#define NEGFRACTION 21
+#define FLOAT1 20
+#define FLOAT2 21
 #define INTEGER 22
-#define NEGINTEGER 23
-#define FUNCTION 24
-#define ARRAY 25
+#define OCT 23
+#define HEX 24
+#define EXP 25
+#define FUNCTION 26
+#define ARRAY 27
+#define STRING 28

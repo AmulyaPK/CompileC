@@ -31,12 +31,15 @@ char tokens[100][100] = {
     "UNMATCHEDCOMMENT", 
     "UNMATCHEDSTRING" ,
     "UNMATCHEDCOMMENTCLOSED",
-    "FRACTION",
-    "NEGFRACTION",
+    "FLOAT1",
+    "FLOAT2",
     "INTEGER",
-    "NEGINTEGER",
+    "OCT",
+    "HEX",
+    "EXP",
     "FUNCTION",
-    "ARRAY"
+    "ARRAY",
+    "STRING"
 };
 
 // Symbol Table struct definition
@@ -69,7 +72,7 @@ char currArrayDims[256];
 // Symbol Table Helper Function
 void print_symbols(symbolEntry *symbol_table[]) 
 {
-    printf("\n<===== SYMBOL TABLE ======>\n");
+    printf("\n<======================================== SYMBOL TABLE =======================================>\n");
 
     printf("%-30s %-20s %-12s %-6s %-12s %-20s\n", 
            "Name", "Token", "Dimensions", "Freq", "ReturnType", "Parameters");
@@ -89,13 +92,12 @@ void print_symbols(symbolEntry *symbol_table[])
     printf("-----------------------------------------------------------------------------------------------\n\n");
 }
 
-
 // Constant Table Helper Function
 void print_constant(constantEntry *constant_table[]) 
 {
-    printf("<====== CONSTANTS TABLE =====>\n");
+    printf("<====================== CONSTANTS TABLE =====================>\n");
     printf("%-30s %-20s %-12s\n", "Name", "Token", "LineNumber");
-    printf("-------------------------------------------------------------\n");
+    printf("--------------------------------------------------------------\n");
     for (int i = 0 ; i < constantInd ; i++) {
         printf("%-30s %-20s %-12d\n", 
             constant_table[i]->name, 
@@ -130,12 +132,12 @@ void add_symbol_to_table(char *lexeme, int tokenNumber) {
 
 %}
 
-WS      [ \t\r\f\v]+
-DATATYPES (int|char|float|double|void|bool)
-KEYWORDS (auto|break|const|goto|continue|switch|case|do|default|double|register|static|while|volatile|extern|short|unsigned|main|for|return|sizeof|struct|union|typedef|if|else)
-IDENTIFIERS     [A-Za-z_][A-Za-z0-9_]*
-DEC             (0|[1-9][0-9]*)
-OCT             0[0-7]+
+WS          [ \t\r\f\v]+
+DATATYPES   (int|char|float|double|void|bool)
+KEYWORDS    (auto|break|const|goto|continue|switch|case|do|default|double|register|static|while|volatile|extern|short|unsigned|main|for|return|sizeof|struct|union|typedef|if|else)
+IDENTIFIERS [A-Za-z_][A-Za-z0-9_]*
+DEC         (0|[1-9][0-9]*)
+OCT         0[0-7]+
 HEX             0[xX][0-9a-fA-F]+
 EXP             ([eE][+-]?[0-9]+)
 FLOAT1          ([0-9]+\\.[0-9]*{EXP}?|[0-9]+{EXP})
@@ -218,12 +220,14 @@ STR             \\\"([^\\\\\\\"\\n]|\\\\.)*\\\"
 ","           {return COMMA;}
 ";"           {return SEMICOLON;}
 
-\"([^\\\"]|\\.)*\"      { return LITERAL; }   // string
+\"([^\\\"]|\\.)*\"      { return STRING; }   // string
 \'([^\\\']|\\.)\'       { return LITERAL; }   // char
-[0-9]+\.[0-9]+          { return FRACTION; }
--[0-9]+\.[0-9]+         { return NEGFRACTION; }
-[0-9]+                  { return INTEGER; }
--[0-9]+                 { return NEGINTEGER; }
+{DEC} { return INTEGER; }
+{OCT} { return OCT; }
+{HEX} { return HEX; }
+{EXP} { return EXP; }
+{FLOAT1} { return FLOAT1; }
+{FLOAT2} { return FLOAT2; }
 
 \/\/(.*)      {return SINGLELINECOMMENT;}
 "/*"([^*]|\*+[^*/])*\*+"/" {return MULTILINECOMMENT;}
@@ -262,13 +266,8 @@ int main()
         symbolEntry *s = malloc(sizeof(symbolEntry));
         constantEntry *c = malloc(sizeof(constantEntry));
 
-        // Literals
-        if (tokenNumber == 6) {
-            printf("On line number %d found literal %s\n", yylineno, lexeme);
-        }
-
-        // Constants
-        if (tokenNumber == 20 || tokenNumber == 21 || tokenNumber == 22 || tokenNumber == 23) 
+        // Constants and literals
+        if (tokenNumber == 6|| tokenNumber == 28 || tokenNumber == 20 || tokenNumber == 21 || tokenNumber == 22 || tokenNumber == 23 || tokenNumber == 24 || tokenNumber == 25) 
         { 
             // Constants table
             strcpy(c->name, lexeme);
@@ -289,7 +288,7 @@ int main()
         }
 
         // Functions
-        else if (tokenNumber == 24) { 
+        else if (tokenNumber == 26) { 
             char returnType[50] = "";
             int rtInd = 0;
             char name[50] = "";
@@ -339,7 +338,7 @@ int main()
         }
 
         // Arrays
-        else if (tokenNumber == 25) { 
+        else if (tokenNumber == 27) { 
             char type[32] = "";
             int typeInd = 0;
             char name[64] = "";
