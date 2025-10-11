@@ -18,8 +18,6 @@ static char *dup_text(const char *s) {
 
 extern YYSTYPE yylval;
 
-int yylineno = 1;
-
 %}
 
 DIGIT       [0-9]+
@@ -65,42 +63,45 @@ CHAR_BODY        ([^\\'\n]|\\(.))
 ","         { return COMMA; }
 "["         { return OBRACKET; }
 "]"         { return CBRACKET; }
-"\""        { 
-    {
-        char buffer[4096];
-        size_t k = 0;
-        int c;
-        while ((c = input()) != EOF) {
-            if (c == '\n') { yylineno++; }
-            if (k < sizeof(buffer) - 1) buffer[k++] = (char)c;
-            if (c == '\\') {
-                int d = input();
-                if (d == EOF) break;
-                if (d == '\n') yylineno++;
-                if (k < sizeof(buffer) - 1) buffer[k++] = (char)d;
-                continue;
-            }
-            if (c == '"') break;
-        }
-        buffer[k] = '\0';
-        size_t total_length = 2 + strlen(buffer) + 1;
-        char *s = malloc(total_length);
-        if (!s) { perror("malloc"); exit(1); }
-        s[0] = '"';
-        s[1] = '\0';
-        strncat(s, buffer, total_length - 2);
-        if (strlen(buffer) == 0 || buffer[strlen(buffer) - 1] != '"') {
-            fprintf(stderr, "Err_INCOMPLETE_STRING: Line %d near %s\n", yylineno, s);
-            free(s);
+\" {
+    char buffer[4096];
+    size_t k = 0;
+    int c;
+
+    while ((c = input()) != EOF) {
+        if (c == '\n') {
+            yylineno++;
+            fprintf(stderr, "ERR_UNTERMINATED_STRING: Line %d\n", yylineno);
             return UNMATCHEDSTRING;
         }
-        else {
-            yylval.str = s;
-            return STRING_LITERAL;
+        if (c == '"') break; // found closing quote
+
+        if (c == '\\') {
+            int d = input();
+            if (d == EOF) break;
+            if (d == '\n') yylineno++;
+            if (k < sizeof(buffer) - 2) {
+                buffer[k++] = c;
+                buffer[k++] = d;
+            }
+        } else {
+            if (k < sizeof(buffer) - 1) buffer[k++] = c;
         }
     }
-    // return QUOTE; 
+
+    buffer[k] = '\0';
+
+    // Compose the full string with surrounding quotes
+    char *s = malloc(k + 3); // for quotes and null terminator
+    if (!s) { perror("malloc"); exit(1); }
+    s[0] = '"';
+    strcpy(&s[1], buffer);
+    strcat(s, "\"");
+
+    yylval.str = s;
+    return STRING_LITERAL;
 }
+
 \'{CHAR_BODY}\' { yylval.str = dup_text(yytext); return CHAR_LITERAL; }
 {DIGIT}"."{DIGIT}([eE][+-]?{DIGIT})? { yylval.str = dup_text(yytext); return NUMBER; }
 {DIGIT}([eE][+-]?{DIGIT})?    { yylval.str = dup_text(yytext); return NUMBER; }

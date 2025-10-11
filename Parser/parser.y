@@ -56,7 +56,10 @@ static char *xstrdup(const char *s) {
 
 /* find symbol index */
 static int sym_find_index(const char *name) {
-    for(int i = 0 ; i < sym_count ; i++) if (strcmp(symtab[i].name, name) == 0) return i;
+    for(int i = 0 ; i < sym_count ; i++) {
+        if (strcmp(symtab[i].name, name) == 0)
+            return i;
+    }
     return -1;
 }
 
@@ -67,18 +70,22 @@ static void sym_insert_or_update (const char *name, const char *type, const char
 {
     int idx = sym_find_index(name);
     if (idx >= 0) {
-        /* update known symbol */
         Symbol *s = &symtab[idx];
         s->frequency++;
-        if (type && strcmp(type, "-") != 0) strncpy(s->type, type, sizeof(s->type) - 1);
-        if (class && strcmp(class, "-") != 0) strncpy(s->class, class, sizeof(s->class) - 1);
-        if (boundaries && strcmp(boundaries, "-") != 0) strncpy(s->boundaries, boundaries, sizeof(s->boundaries) - 1);
-        if (array_dims && strcmp(array_dims, "-") != 0) strncpy(s->array_dims, array_dims, sizeof(s->array_dims) - 1);
-        if (params && strcmp(params, "-") != 0) strncpy(s->params, params, sizeof(s->params) - 1);
-        if (proc_def) s->proc_def = 1;
+        if (type && strcmp(type, "-") != 0)
+            strncpy(s->type, type, sizeof(s->type) - 1);
+        if (class && strcmp(class, "-") != 0)
+            strncpy(s->class, class, sizeof(s->class) - 1);
+        if (boundaries && strcmp(boundaries, "-") != 0)
+            strncpy(s->boundaries, boundaries, sizeof(s->boundaries) - 1);
+        if (array_dims && strcmp(array_dims, "-") != 0)
+            strncpy(s->array_dims, array_dims, sizeof(s->array_dims) - 1);
+        if (params && strcmp(params, "-") != 0)
+            strncpy(s->params, params, sizeof(s->params) - 1);
+        if (proc_def)
+            s->proc_def = 1;
         return;
     }
-
     if(sym_count >= MAX_SYMBOLS) {
         fprintf(stderr, "Symbol table full, cannot insert %s\n", name);
         return;
@@ -99,23 +106,26 @@ static void sym_insert_or_update (const char *name, const char *type, const char
     s->ref_count = 0;
 }
 
-/* add a reference line to symbol (use when identifier used) */
+/* add reference line */
 static void sym_add_reference(const char *name, int line) {
     int idx = sym_find_index(name);
     if (idx < 0) {
-        /* if not declared yet, insert with placeholders */
         sym_insert_or_update(name, "-", "-", "-", "-", "-", 0, current_nesting, -1);
         idx = sym_find_index(name);
         if(idx < 0) return;
     }
     Symbol *s = &symtab[idx];
     s->frequency++;
-    if(s->ref_count < MAX_REFS_PER_SYM) s->ref_lines[s->ref_count++] = line;
+    if(s->ref_count < MAX_REFS_PER_SYM)
+        s->ref_lines[s->ref_count++] = line;
 }
 
-/* constant functions */
+/* constant table */
 static int const_find_index(const char *lexeme, const char *type) {
-    for (int i = 0 ; i < const_count ; i++) if(strcmp(consttab[i].name, lexeme) == 0 && strcmp(consttab[i].type, type) == 0) return i;
+    for(int i = 0; i < const_count; i++){
+        if(strcmp(consttab[i].name, lexeme) == 0 && strcmp(consttab[i].type, type) == 0)
+            return i;
+    }
     return -1;
 }
 
@@ -123,10 +133,14 @@ static void const_insert_or_bump(const char *lexeme, const char *type, int line)
     int idx = const_find_index(lexeme, type);
     if (idx >= 0) {
         consttab[idx].count++;
-        if(consttab[idx].ref_count < 128) consttab[idx].ref_lines[consttab[idx].ref_count++] = line;
+        if(consttab[idx].ref_count < 128)
+            consttab[idx].ref_lines[consttab[idx].ref_count++] = line;
         return;
     }
-    if (const_count >= MAX_CONSTS) { fprintf(stderr,"Constant table full\n"); return; }
+    if (const_count >= MAX_CONSTS) {
+        fprintf(stderr,"Constant table full\n");
+        return;
+    }
     Constant *c = &consttab[const_count++];
     memset(c, 0, sizeof(*c));
     strncpy(c->name, lexeme, sizeof(c->name) - 1);
@@ -135,22 +149,25 @@ static void const_insert_or_bump(const char *lexeme, const char *type, int line)
     c->first_line = line;
     c->count = 1;
     c->ref_count = 0;
-    if(c->ref_count < 128) c->ref_lines[c->ref_count++] = line;
+    if(c->ref_count < 128)
+        c->ref_lines[c->ref_count++] = line;
 }
 
-/* pretty print tables */
+/* print symbol table */
 static void print_symbol_table(void) {
     printf("\n================= SYMBOL TABLE =================\n");
     printf("%-18s %-8s %-10s %-14s %-12s %-20s %-4s %-6s %-6s %-6s %-s\n",
-           "Name","Type","Class","Boundaries","ArrayDims","Parameters","PDef","Nest","DeclLn","Freq","RefLines");
+           "Name","Type","Class","Boundaries","ArrayDims","Parameters",
+           "PDef","Nest","DeclLn","Freq","RefLines");
     printf("--------------------------------------------------------------------------------------------------------------------\n");
     for (int i = 0 ; i < sym_count ; i++) {
         Symbol *s = &symtab[i];
         printf("%-18s %-8s %-10s %-14s %-12s %-20s %-4d %-6d %-6d %-6d ",
-               s->name, s->type, s->class, s->boundaries, s->array_dims, s->params, s->proc_def, s->nesting_level, s->declared_line, s->frequency);
-        /* print ref lines */
-        if (s->ref_count == 0) printf("-\n");
-        else {
+               s->name, s->type, s->class, s->boundaries, s->array_dims,
+               s->params, s->proc_def, s->nesting_level, s->declared_line, s->frequency);
+        if (s->ref_count == 0) {
+            printf("-\n");
+        } else {
             for (int j = 0 ; j < s->ref_count ; j++) {
                 if (j) printf(",");
                 printf("%d", s->ref_lines[j]);
@@ -163,14 +180,16 @@ static void print_symbol_table(void) {
 /* print constant table */
 static void print_const_table(void) {
     printf("\n================= CONSTANT TABLE =================\n");
-    printf("%-22s %-10s %-12s %-10s %-6s %s\n", "Variable Name", "FirstLine", "Value", "Type", "Count", "RefLines");
+    printf("%-22s %-10s %-12s %-10s %-6s %s\n",
+           "Variable Name", "FirstLine", "Value", "Type", "Count", "RefLines");
     printf("------------------------------------------------------------------------------\n");
     for (int i = 0 ; i < const_count ; i++) {
         Constant *c = &consttab[i];
         printf("%-22s %-10d %-12s %-10s %-6d ",
                c->name, c->first_line, c->value, c->type, c->count);
-        if (c->ref_count == 0) printf("-\n");
-        else {
+        if (c->ref_count == 0) {
+            printf("-\n");
+        } else {
             for (int j = 0 ; j < c->ref_count ; j++) {
                 if (j) printf(",");
                 printf("%d", c->ref_lines[j]);
@@ -199,10 +218,10 @@ static void print_const_table(void) {
 %token QUOTE UNMATCHEDSTRING PREPROCESSOR UNMATCHEDCOMMENT
 
 %start program
-
 %type <str> type_specifier params_list param_decl declarator_var declarator_array declarator_func
 
-%%
+%%  /* GRAMMAR RULES BEGIN HERE */
+/* ----------------- PART 2/2: GRAMMAR RULES + yyerror + main ----------------- */
 
 program:
       includes external_defs
@@ -226,7 +245,6 @@ external_def:
 global_decl:
       type_specifier declarator_var SEMICOLON
         {
-            /* $1 = type string, $2 = id string */
             sym_insert_or_update($2, $1, "variable", "-", "-", "-", 0, current_nesting, yylineno);
             free($1); free($2);
         }
@@ -235,14 +253,16 @@ global_decl:
             /* declarator_array inserted symbol already inside its action */
             free($1);
         }
+    | type_specifier error SEMICOLON
+        {
+            fprintf(stderr, "Error at line %d: invalid global declaration\n", yylineno);
+            yyerrok;
+        }
     ;
 
 function_def:
       type_specifier declarator_func block
         {
-            /* declarator_func action already inserted the function symbol with params and return type "-".
-               Update its return type now using $1 and mark proc_def = 1 and declared line. */
-            /* $2 = function name string (returned by declarator_func) */
             if($2){
                 sym_insert_or_update($2, $1, "function", "-", "-", "-", 1, current_nesting, yylineno);
                 free($2);
@@ -254,6 +274,17 @@ function_def:
 /* block increases nesting for declarations */
 block:
     OCURLY { current_nesting++; } decl_list stmt_list CCURLY { current_nesting--; }
+  | OCURLY { current_nesting++; } error CCURLY
+        {
+            fprintf(stderr, "Error at line %d: invalid block contents\n", yylineno);
+            yyerrok;
+            current_nesting--;
+        }
+  | error CCURLY
+        {
+            fprintf(stderr, "Error at line %d: missing '{' before block\n", yylineno);
+            yyerrok;
+        }
     ;
 
 decl_list:
@@ -271,6 +302,11 @@ decl:
         {
             /* declarator_array handled in its action */
             free($1);
+        }
+    | type_specifier error SEMICOLON
+        {
+            fprintf(stderr, "Error at line %d: invalid local declaration\n", yylineno);
+            yyerrok;
         }
     ;
 
@@ -290,12 +326,17 @@ declarator_var:
 declarator_array:
       IDENTIFIER OBRACKET NUMBER CBRACKET
         {
-            /* $1 = id, $3 = number string */
             char dims[128]; snprintf(dims,sizeof(dims),"[%s]", $3);
             sym_insert_or_update($1, "-", "array", "-", dims, "-", 0, current_nesting, yylineno);
-            /* record the size as a constant */
             const_insert_or_bump($3, "int", yylineno);
             free($3);
+            $$ = $1;
+        }
+    | IDENTIFIER OBRACKET error CBRACKET
+        {
+            /* malformed array size */
+            fprintf(stderr, "Error at line %d: invalid array size in declaration of '%s'\n", yylineno, $1);
+            yyerrok;
             $$ = $1;
         }
     ;
@@ -304,11 +345,16 @@ declarator_array:
 declarator_func:
       IDENTIFIER OPAREN params_list CPAREN
         {
-            /* $1 = id, $3 = params string or "-" */
             char *params = $3 ? $3 : xstrdup("-");
             sym_insert_or_update($1, "-", "function", "-", "-", params, 0, current_nesting, yylineno);
             free(params);
             $$ = $1;  /* pass function name up (caller will free) */
+        }
+    | IDENTIFIER OPAREN error CPAREN
+        {
+            fprintf(stderr, "Error at line %d: malformed parameter list for function '%s'\n", yylineno, $1);
+            yyerrok;
+            $$ = $1;
         }
     ;
 
@@ -318,7 +364,6 @@ params_list:
     | param_decl           { $$ = $1; }
     | params_list COMMA param_decl
         {
-            /* concat params: $1 may be NULL */
             char *a = $1;
             char *b = $3;
             if(!a) { $$ = b; }
@@ -329,6 +374,12 @@ params_list:
                 free(a); free(b);
                 $$ = out;
             }
+        }
+    | error
+        {
+            fprintf(stderr, "Error at line %d: invalid parameters in parameter list\n", yylineno);
+            yyerrok;
+            $$ = NULL;
         }
     ;
 
@@ -354,17 +405,33 @@ statement:
     | printf_stmt
     | return_stmt
     | local_decl
+    | error SEMICOLON
+        {
+            fprintf(stderr, "Error at line %d: invalid statement\n", yylineno);
+            yyerrok;
+        }
     ;
 
+/* local declarations */
 local_decl:
       type_specifier declarator_var SEMICOLON
         {
             sym_insert_or_update($2, $1, "variable", "-", "-", "-", 0, current_nesting, yylineno);
             free($1); free($2);
         }
+    | type_specifier declarator_var ASSIGN expr SEMICOLON
+        {
+            sym_insert_or_update($2, $1, "variable", "-", "-", "-", 0, current_nesting, yylineno);
+            free($1); free($2);
+        }  
     | type_specifier declarator_array SEMICOLON
         {
             free($1);
+        }
+    | type_specifier error SEMICOLON
+        {
+            fprintf(stderr, "Error at line %d: invalid local declaration\n", yylineno);
+            yyerrok;
         }
     ;
 
@@ -381,6 +448,11 @@ printf_stmt:
             sym_add_reference($5, yylineno);
             free($3); free($5);
         }
+    | PRINTF OPAREN error CPAREN SEMICOLON
+        {
+            fprintf(stderr, "Error at line %d: malformed printf arguments\n", yylineno);
+            yyerrok;
+        }
     ;
 
 /* return */
@@ -395,11 +467,21 @@ return_stmt:
             sym_add_reference($2, yylineno);
             free($2);
         }
+    | RETURN error SEMICOLON
+        {
+            fprintf(stderr, "Error at line %d: invalid return value\n", yylineno);
+            yyerrok;
+        }
     ;
 
 /* expressions */
 expr_stmt:
-      expr SEMICOLON { }
+      expr SEMICOLON
+    | error SEMICOLON
+        {
+            fprintf(stderr, "Error at line %d: invalid expression\n", yylineno);
+            yyerrok;
+        }
     ;
 
 expr:
@@ -418,14 +500,27 @@ expr:
             sym_add_reference($1, yylineno);
             free($1);
         }
+    | error
+        {
+            fprintf(stderr, "Error at line %d: incomplete or invalid expression\n", yylineno);
+            yyerrok;
+        }
     ;
 
 %%
 
-void yyerror(const char *s) {
-    fprintf(stderr, "Parse error at line %d: %s\n", yylineno, s ? s : "");
+/* ---------------- Improved single-line yyerror ---------------- */
+void yyerror(const char *msg) {
+    extern char *yytext;
+    if (yytext && *yytext)
+        fprintf(stderr, "Syntax error at line %d near '%s': %s\n",
+                yylineno, yytext, msg ? msg : "invalid syntax");
+    else
+        fprintf(stderr, "Syntax error at line %d: %s\n",
+                yylineno, msg ? msg : "invalid syntax");
 }
 
+/* ---------------- main (unchanged except using improved yyerror) ---------------- */
 int main(int argc, char **argv) {
     if (argc < 2) {
         printf("Usage: %s <source.c>\n", argv[0]);
