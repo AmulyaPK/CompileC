@@ -1,4 +1,4 @@
-%option noyywrap nounput yylineno
+%option yylineno
 %{
 /*
   lexer.l
@@ -16,7 +16,6 @@
 
 extern YYSTYPE yylval;   /* Bison semantic value */
 extern int yylineno;
-int yywrap();
 static char *dup_text(const char *s){ if(!s) return NULL; char *r = malloc(strlen(s)+1); if(!r){perror("malloc");exit(1);} strcpy(r,s); return r; }
 %}
 
@@ -98,25 +97,16 @@ STR_BODY    ([^\\\"\n]|\\.)
 "?"                         { return QMARK; }
 
 "//".*                      { /* ignore single line comment */ }
-"/*"                        {
-                              int depth = 1;
-                              int c, d;
-                              while((c = input()) != EOF){
-                                  if(c == '\n') yylineno++;
-                                  if(c == '/' && (d = input()) == '*') { depth++; }
-                                  else if(c == '*' && (d = input()) == '/') { depth--; if(depth == 0) break; }
-                                  else { if(d != EOF) unput(d); }
-                              }
-                              if(depth > 0){
-                                  fprintf(stderr,"ERR_UNTERMINATED_COMMENT: Line %d\n", yylineno);
-                                  return UNMATCHEDCOMMENT;
-                              }
-                              /* ignore comment */
-                            }
+"/*"([^*]|\*+[^*/])*\*+"/"   { /* ignore block comments */ }
 
-.                           {
-                              fprintf(stderr,"ERR_UNEXPECTED_CHARACTER: Line %d near '%s'\n", yylineno, yytext);
-                            }
+
+. {
+    fprintf(stderr,"ERR_UNEXPECTED_CHARACTER: Line %d near '%s'\n", yylineno, yytext);
+    /* do not return — just skip */
+}
 
 %%
-int yywrap() { return 1; }
+
+int yywrap() {
+    return 1;  // Returning 1 tells Lex that scanning is finished
+}

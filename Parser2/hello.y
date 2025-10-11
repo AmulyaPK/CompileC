@@ -11,8 +11,9 @@
 
 #include <stdarg.h>
 
-extern int yylex(void);
+int yylex();
 extern int yylineno;   /* maintained by lexer */
+extern char *yytext;
 void yyerror(const char *fmt, ...);
 
 /* Settings for table sizes */
@@ -178,16 +179,6 @@ static void print_const_table(void){
             printf("\n");
         }
     }
-}
-
-/* error helper */
-void yyerror(const char *fmt, ...){
-    va_list ap;
-    va_start(ap, fmt);
-    fprintf(stderr, "Parse error (line %d): ", yylineno);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
-    va_end(ap);
 }
 
 %}
@@ -509,11 +500,11 @@ postfix_expression:
     ;
 
 primary_expression:
-      IDENTIFIER { sym_add_reference(yylex, yylineno); }
-    | INT_CONST   { const_insert_or_bump(yylex, "int", yylineno); }
-    | FLOAT_CONST { const_insert_or_bump(yylex, "float", yylineno); }
-    | STRING_LITERAL { const_insert_or_bump(yylex, "string", yylineno); }
-    | CHAR_CONST { const_insert_or_bump(yylex, "char", yylineno); }
+      IDENTIFIER { sym_add_reference(yytext, yylineno); }
+    | INT_CONST   { const_insert_or_bump(yytext, "int", yylineno); }
+    | FLOAT_CONST { const_insert_or_bump(yytext, "float", yylineno); }
+    | STRING_LITERAL { const_insert_or_bump(yytext, "string", yylineno); }
+    | CHAR_CONST { const_insert_or_bump(yytext, "char", yylineno); }
     | LPAREN expression RPAREN
     ;
 
@@ -537,14 +528,6 @@ type_name:
 specifier_qualifier_list:
       type_specifier
     | type_specifier specifier_qualifier_list
-    ;
-
-/* type_specifier (simplified) */
-type_specifier:
-      KEYWORD
-    | STRUCT IDENTIFIER
-    | UNION IDENTIFIER
-    | ENUM IDENTIFIER
     ;
 
 /* abstract_declarator optional */
@@ -594,11 +577,24 @@ constant_expression:
 
 /* ---------------- epilogue ---------------- */
 
+/* error helper */
+void yyerror(const char *fmt, ...){
+    va_list ap;
+    va_start(ap, fmt);
+    fprintf(stderr, "Parse error (line %d): ", yylineno);
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    va_end(ap);
+}
+
+extern FILE *yyin;
+
 int main(int argc, char **argv){
     if(argc < 2){ fprintf(stderr,"Usage: %s <source.c>\n", argv[0]); return 1; }
     FILE *f = fopen(argv[1],"r");
     if(!f){ perror("fopen"); return 1; }
-    FILE *yyin = f;
+    yyin = f;
+    
     if(yyparse() == 0){
         printf("Parsing succeeded.\n");
         print_symbol_table();
@@ -606,6 +602,8 @@ int main(int argc, char **argv){
     } else {
         fprintf(stderr,"Parsing failed.\n");
     }
+
+    // yyparse();
     fclose(f);
     return 0;
 }
