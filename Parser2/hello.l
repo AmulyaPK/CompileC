@@ -38,7 +38,7 @@ STR_BODY    ([^\\\"\n]|\\.)
 
 %%
 
-{NL}                        { yylineno++; }
+{NL}                        { }
 {WS}                        { /* ignore */ }
 
 "include"[ \t]+\"[A-Za-z0-9_./-]+\"    { yylval.str = dup_text(yytext); return INCLUDE; }

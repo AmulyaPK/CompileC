@@ -11,9 +11,10 @@
 
 #include <stdarg.h>
 
-int yylex();
 extern int yylineno;   /* maintained by lexer */
 extern char *yytext;
+extern FILE *yyin;
+int yylex();
 void yyerror(const char *fmt, ...);
 
 /* Settings for table sizes */
@@ -228,54 +229,61 @@ external_declaration:
     ;
 
 preproc_directive:
-      INCLUDE   { /* include handled in lexer; nothing to do here */ }
-    | PREPROCESSOR { /* raw preprocessor line */ }
+      INCLUDE   { /* include handled in lexer; nothing to do here */
+        printf("[OK][Line %d] Parsed include\n", yylineno); }
+    | PREPROCESSOR { /* raw preprocessor line */ 
+        printf("[OK][Line %d] Parsed preprocessor directive\n", yylineno);}
     ;
 
 /* ---------- declarations ---------- */
 declaration:
       declaration_specifiers init_declarator_list SEMI
         {
-            /* each init_declarator handled in its action */
+            printf("[OK][Line %d] Declaration with initializer list\n", yylineno);
         }
     | declaration_specifiers SEMI
+        {
+            printf("[OK][Line %d] Declaration without initializer\n", yylineno);
+        }
     ;
 
 declaration_specifiers:
       type_specifier
-    | type_specifier declaration_specifiers /* supporting multiple specifiers like 'unsigned long' */
+    | type_specifier declaration_specifiers
     | storage_class_specifier
     | type_qualifier
     ;
 
 storage_class_specifier:
-      /* stub: auto, register, static, extern, typedef */
-      /* recognized as KEYWORD token by lexer; parser can check text if needed */
       KEYWORD
+        { printf("[OK][Line %d] Storage class specifier\n", yylineno); }
     ;
 
 type_qualifier:
       KEYWORD
+        { printf("[OK][Line %d] Type qualifier\n", yylineno); }
     ;
 
-/* type specifiers (basic + struct/union/enum) */
 type_specifier:
       KEYWORD
+        { printf("[OK][Line %d] Basic type specifier\n", yylineno); }
     | STRUCT declarator_opt LBRACE struct_declaration_list RBRACE
         {
-            /* struct type declared; not fully expanded here */
+            printf("[OK][Line %d] Struct type specifier\n", yylineno);
         }
     | UNION declarator_opt LBRACE struct_declaration_list RBRACE
-    | IDENTIFIER /* typedef name or type name */
+        {
+            printf("[OK][Line %d] Union type specifier\n", yylineno);
+        }
+    | IDENTIFIER
+        { printf("[OK][Line %d] Typedef or identifier as type specifier\n", yylineno); }
     ;
 
-/* optional declarator after struct tag */
 declarator_opt:
     /* empty */ 
     | IDENTIFIER
     ;
 
-/* struct declarations (simplified) */
 struct_declaration_list:
     struct_declaration
     | struct_declaration_list struct_declaration
@@ -283,6 +291,9 @@ struct_declaration_list:
 
 struct_declaration:
     declaration_specifiers struct_declarator_list SEMI
+        {
+            printf("[OK][Line %d] Struct field declaration\n", yylineno);
+        }
     ;
 
 struct_declarator_list:
@@ -292,10 +303,11 @@ struct_declarator_list:
 
 struct_declarator:
     declarator
-    | declarator COLON constant_expression   /* bit-field */
+        { printf("[OK][Line %d] Struct field declarator\n", yylineno); }
+    | declarator COLON constant_expression
+        { printf("[OK][Line %d] Struct bit-field declarator\n", yylineno); }
     ;
 
-/* init_declarator_list: list of declarators with optional initializers */
 init_declarator_list:
     init_declarator
     | init_declarator_list COMMA init_declarator
@@ -303,47 +315,42 @@ init_declarator_list:
 
 init_declarator:
     declarator
+        { printf("[OK][Line %d] Declarator without initializer\n", yylineno); }
     | declarator ASSIGN initializer
-        {
-            /* initializer may contain constants/expressions; declarator action already recorded symbol */
-        }
+        { printf("[OK][Line %d] Declarator with initializer\n", yylineno); }
     ;
 
-/* declarators: pointer + direct_declarator support */
 declarator:
       pointer direct_declarator
+        { printf("[OK][Line %d] Pointer declarator\n", yylineno); }
     | direct_declarator
+        { printf("[OK][Line %d] Direct declarator\n", yylineno); }
     ;
 
 pointer:
-      '*' /* pointer to type qualifiers optional */
+      '*'
+        { printf("[OK][Line %d] Single pointer *\n", yylineno); }
     | '*' pointer
+        { printf("[OK][Line %d] Multiple pointers ** or more\n", yylineno); }
     ;
 
-/* direct declarator handles identifiers, arrays, function declarators */
 direct_declarator:
-      IDENTIFIER
-        {
-            /* plain identifier: actual insertion must be done in parent rule where type present */
-            /* we just pass the identifier string using $$ */
-            /* in actions above we will combine the type and identifier to fill symbol table */
-            /* store lexeme pointer in parser stack */
-        }
-    | direct_declarator LBRACK constant_expression_opt RBRACK
-        {
-            /* array declarator; constant_expression_opt may provide dimension */
-        }
+    direct_declarator LBRACK constant_expression_opt RBRACK
+        { printf("[OK][Line %d] Array declarator\n", yylineno); }
     | direct_declarator LPAREN parameter_type_list RPAREN
-        {
-            /* function declarator with prototyped params */
-        }
+        { printf("[OK][Line %d] Function declarator with parameters\n", yylineno); }
     | LPAREN declarator RPAREN
+        { printf("[OK][Line %d] Parenthesized declarator\n", yylineno); }
+    | IDENTIFIER
+        { printf("[OK][Line %d] Identifier declarator\n", yylineno); }
     ;
+
 
 /* parameter declarations */
 parameter_type_list:
       parameter_list
     | parameter_list COMMA ELLIPSIS
+    | /* empty */
     ;
 
 parameter_list:
@@ -389,6 +396,7 @@ function_definition:
         {
             /* This is where we take the declarator and the type and insert a symbol with proc_def_flag=1 */
             /* To keep code modular, concrete insertion occurs in the declarator actions below when we have type + id */
+            printf("[OK][Line %d] Function definition recognized\n", yylineno);
         }
     ;
 
@@ -408,7 +416,8 @@ labeled_statement:
     ;
 
 compound_statement:
-      LBRACE block_item_list RBRACE
+    LBRACE RBRACE
+    |  LBRACE block_item_list RBRACE
     ;
 
 block_item_list:
@@ -587,14 +596,12 @@ void yyerror(const char *fmt, ...){
     va_end(ap);
 }
 
-extern FILE *yyin;
-
 int main(int argc, char **argv){
     if(argc < 2){ fprintf(stderr,"Usage: %s <source.c>\n", argv[0]); return 1; }
     FILE *f = fopen(argv[1],"r");
     if(!f){ perror("fopen"); return 1; }
     yyin = f;
-    
+
     if(yyparse() == 0){
         printf("Parsing succeeded.\n");
         print_symbol_table();
