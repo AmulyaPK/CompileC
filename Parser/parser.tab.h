@@ -91,7 +91,8 @@ extern int yydebug;
     QUOTE = 292,                   /* QUOTE  */
     UNMATCHEDSTRING = 293,         /* UNMATCHEDSTRING  */
     PREPROCESSOR = 294,            /* PREPROCESSOR  */
-    UNMATCHEDCOMMENT = 295         /* UNMATCHEDCOMMENT  */
+    UNMATCHEDCOMMENT = 295,        /* UNMATCHEDCOMMENT  */
+    IFX = 296                      /* IFX  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -105,7 +106,7 @@ union YYSTYPE
     int num;
     char *str;
 
-#line 109 "parser.tab.h"
+#line 110 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

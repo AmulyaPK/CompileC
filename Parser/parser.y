@@ -157,7 +157,7 @@ static void const_insert_or_bump(const char *lexeme, const char *type, int line)
 static void print_symbol_table(void) {
     printf("\n================= SYMBOL TABLE =================\n");
     printf("%-18s %-8s %-10s %-14s %-12s %-20s %-4s %-6s %-6s %-6s %-s\n",
-           "Name","Type","Class","Boundaries","ArrayDims","Parameters",
+           "Name","Token","Class","Boundaries","ArrayDims","Parameters",
            "PDef","Nest","DeclLn","Freq","RefLines");
     printf("--------------------------------------------------------------------------------------------------------------------\n");
     for (int i = 0 ; i < sym_count ; i++) {
@@ -245,13 +245,14 @@ external_def:
 global_decl:
       type_specifier declarator_var SEMICOLON
         {
+            printf("Line %d: Parsed a global variable declaration for '%s'.\n", yylineno, $2);
             sym_insert_or_update($2, $1, "variable", "-", "-", "-", 0, current_nesting, yylineno);
             free($1); free($2);
         }
     | type_specifier declarator_array SEMICOLON
         {
-            /* declarator_array inserted symbol already inside its action */
-            free($1);
+            printf("Line %d: Parsed a global array declaration for '%s'.\n", yylineno, $2);
+            free($1); free($2);
         }
     | type_specifier error SEMICOLON
         {
@@ -263,6 +264,7 @@ global_decl:
 function_def:
       type_specifier declarator_func block
         {
+            printf("Line %d: Parsed a function definition for '%s'.\n", yylineno, $2);
             if($2){
                 sym_insert_or_update($2, $1, "function", "-", "-", "-", 1, current_nesting, yylineno);
                 free($2);
@@ -300,8 +302,7 @@ decl:
         }
     | type_specifier declarator_array SEMICOLON
         {
-            /* declarator_array handled in its action */
-            free($1);
+            free($1); free($2);
         }
     | type_specifier error SEMICOLON
         {
@@ -334,7 +335,6 @@ declarator_array:
         }
     | IDENTIFIER OBRACKET error CBRACKET
         {
-            /* malformed array size */
             fprintf(stderr, "Error at line %d: invalid array size in declaration of '%s'\n", yylineno, $1);
             yyerrok;
             $$ = $1;
@@ -405,6 +405,11 @@ statement:
     | printf_stmt
     | return_stmt
     | local_decl
+    | if_stmt
+    | while_stmt
+    | for_stmt
+    | block
+    | SEMICOLON
     | error SEMICOLON
         {
             fprintf(stderr, "Error at line %d: invalid statement\n", yylineno);
@@ -412,21 +417,53 @@ statement:
         }
     ;
 
-/* local declarations */
+/* Control Flow Statements with logging */
+if_stmt:
+      IF OPAREN expr CPAREN statement %prec IFX
+        { printf("Line %d: Parsed an if statement.\n", yylineno); }
+    | IF OPAREN expr CPAREN statement ELSE statement
+        { printf("Line %d: Parsed an if-else statement.\n", yylineno); }
+    ;
+
+while_stmt:
+      WHILE OPAREN expr CPAREN statement
+        { printf("Line %d: Parsed a while loop.\n", yylineno); }
+    ;
+
+for_stmt:
+      FOR OPAREN for_init_stmt optional_expr SEMICOLON optional_expr CPAREN statement
+        { printf("Line %d: Parsed a for loop.\n", yylineno); }
+    ;
+
+for_init_stmt:
+      expr_stmt
+    | local_decl
+    | SEMICOLON
+    ;
+
+optional_expr:
+      /* empty */
+    | expr
+    ;
+
+/* local declarations with logging */
 local_decl:
       type_specifier declarator_var SEMICOLON
         {
+            printf("Line %d: Parsed a local variable declaration for '%s'.\n", yylineno, $2);
             sym_insert_or_update($2, $1, "variable", "-", "-", "-", 0, current_nesting, yylineno);
             free($1); free($2);
         }
     | type_specifier declarator_var ASSIGN expr SEMICOLON
         {
+            printf("Line %d: Parsed a local variable declaration with initialization for '%s'.\n", yylineno, $2);
             sym_insert_or_update($2, $1, "variable", "-", "-", "-", 0, current_nesting, yylineno);
             free($1); free($2);
-        }  
+        }
     | type_specifier declarator_array SEMICOLON
         {
-            free($1);
+            printf("Line %d: Parsed a local array declaration for '%s'.\n", yylineno, $2);
+            free($1); free($2);
         }
     | type_specifier error SEMICOLON
         {
@@ -435,15 +472,17 @@ local_decl:
         }
     ;
 
-/* printf forms */
+/* printf forms with logging */
 printf_stmt:
       PRINTF OPAREN STRING_LITERAL CPAREN SEMICOLON
         {
+            printf("Line %d: Parsed a printf statement.\n", yylineno);
             const_insert_or_bump($3, "string", yylineno);
             free($3);
         }
     | PRINTF OPAREN STRING_LITERAL COMMA IDENTIFIER CPAREN SEMICOLON
         {
+            printf("Line %d: Parsed a printf statement with variable '%s'.\n", yylineno, $5);
             const_insert_or_bump($3, "string", yylineno);
             sym_add_reference($5, yylineno);
             free($3); free($5);
@@ -455,15 +494,17 @@ printf_stmt:
         }
     ;
 
-/* return */
+/* return with logging */
 return_stmt:
       RETURN NUMBER SEMICOLON
         {
+            printf("Line %d: Parsed a return statement with value %s.\n", yylineno, $2);
             const_insert_or_bump($2,"int", yylineno);
             free($2);
         }
     | RETURN IDENTIFIER SEMICOLON
         {
+            printf("Line %d: Parsed a return statement with variable '%s'.\n", yylineno, $2);
             sym_add_reference($2, yylineno);
             free($2);
         }
@@ -484,8 +525,41 @@ expr_stmt:
         }
     ;
 
+/* Expression Grammar with logging for assignment */
 expr:
       IDENTIFIER ASSIGN expr
+        {
+            printf("Line %d: Parsed an assignment to variable '%s'.\n", yylineno, $1);
+            sym_add_reference($1, yylineno);
+            free($1);
+        }
+    | cond_expr
+    ;
+
+cond_expr:
+      add_expr
+    | cond_expr LT add_expr
+    | cond_expr GT add_expr
+    | cond_expr LE add_expr
+    | cond_expr GE add_expr
+    | cond_expr EQ add_expr
+    | cond_expr NEQ add_expr
+    ;
+
+add_expr:
+      mul_expr
+    | add_expr PLUS mul_expr
+    | add_expr MINUS mul_expr
+    ;
+
+mul_expr:
+      primary_expr
+    | mul_expr MULT primary_expr
+    | mul_expr DIVIDE primary_expr
+    ;
+
+primary_expr:
+      IDENTIFIER
         {
             sym_add_reference($1, yylineno);
             free($1);
@@ -495,16 +569,17 @@ expr:
             const_insert_or_bump($1,"int", yylineno);
             free($1);
         }
-    | IDENTIFIER
+    | STRING_LITERAL
         {
-            sym_add_reference($1, yylineno);
+            const_insert_or_bump($1, "string", yylineno);
             free($1);
         }
-    | error
+    | CHAR_LITERAL
         {
-            fprintf(stderr, "Error at line %d: incomplete or invalid expression\n", yylineno);
-            yyerrok;
+            const_insert_or_bump($1, "char", yylineno);
+            free($1);
         }
+    | OPAREN expr CPAREN
     ;
 
 %%
