@@ -3,8 +3,9 @@
 float test2;
 
 int main (void) {
+    int a, b, c;
     int a[10];
-    b = 10;
+    x = y + 4;
     printf("Here's the array!\n");
 
     for(int i = 0; i < 10; i = i + 1) 
@@ -17,12 +18,31 @@ int main (void) {
         {
             int d = 2;
         }
+
+        while(a > 17)
+        {
+            a = 1;
+            break;
+        }
     }
     
     return 0;
 }
 
+
 char test(int e, float f)
 {
+    switch (a)
+    {
+        case 1:
+            printf("Hello");
+        default:
+            printf("Heyy");
+    }
     return charRet;
+}
+
+void consume()
+{
+    char g = 'c';
 }

@@ -211,12 +211,13 @@ static void print_const_table(void) {
 
 %token <str> IDENTIFIER NUMBER STRING_LITERAL CHAR_LITERAL INCLUDE PREPROCESSOR
 %token INT FLOAT CHAR VOID
-%token IF ELSE FOR WHILE RETURN
-%token PRINTF
+%token IF ELSE FOR WHILE RETURN PRINTF
+%token SWITCH CASE DEFAULT 
+%token BREAK /* NEW TOKEN */
 %token EQ NEQ LT GT LE GE
 %token PLUS MINUS MULT DIVIDE
 %token ASSIGN
-%token OPAREN CPAREN OCURLY CCURLY SEMICOLON COMMA
+%token OPAREN CPAREN OCURLY CCURLY SEMICOLON COMMA COLON 
 %token OBRACKET CBRACKET
 %token QUOTE UNMATCHEDSTRING UNMATCHEDCOMMENT
 
@@ -239,6 +240,7 @@ p_semicolon: SEMICOLON { sym_insert_or_update(";", "punctuation", "punctuation",
 p_comma:     COMMA     { sym_insert_or_update(",", "punctuation", "punctuation", NULL, NULL, NULL, 0, 0, yylineno); };
 p_obracket:  OBRACKET  { sym_insert_or_update("[", "punctuation", "punctuation", NULL, NULL, NULL, 0, 0, yylineno); };
 p_cbracket:  CBRACKET  { sym_insert_or_update("]", "punctuation", "punctuation", NULL, NULL, NULL, 0, 0, yylineno); };
+p_colon:     COLON     { sym_insert_or_update(":", "punctuation", "punctuation", NULL, NULL, NULL, 0, 0, yylineno); }; 
 
 op_assign:   ASSIGN    { sym_insert_or_update("=", "operator", "assignment", NULL, NULL, NULL, 0, 0, yylineno); };
 op_eq:       EQ        { sym_insert_or_update("==", "operator", "comparison", NULL, NULL, NULL, 0, 0, yylineno); };
@@ -290,7 +292,7 @@ global_decl:
       type_specifier declarator_var p_semicolon
         {
             printf("Line %d: Parsed a global variable declaration for '%s'.\n", yylineno, $2);
-            sym_insert_or_update($2, $1, "variable", NULL, NULL, NULL, 0, current_nesting, yylineno);
+            sym_insert_or_update($2, "identifier", "variable", NULL, NULL, NULL, 0, current_nesting, yylineno); 
             free($1); free($2);
         }
     | type_specifier declarator_array p_semicolon
@@ -306,11 +308,10 @@ function_def:
     {
         printf("Line %d: Parsed a function definition for '%s'.\n", yylineno, $2);
         if($2) { 
-            sym_insert_or_update($2, $1, "function", NULL, NULL, NULL, 1, current_nesting, yylineno);
+            sym_insert_or_update($2, $1, "function", NULL, NULL, yylval.str, 1, current_nesting, yylineno);
             free($2);
         }
-
-    free($1);
+        free($1);
     };
 
 block:
@@ -323,18 +324,17 @@ decl_list:
     | decl_list decl
     ;
 
-/* MODIFIED: This rule now handles ALL local declarations, including with initializers. */
 decl:
     type_specifier declarator_var p_semicolon
         {
             printf("Line %d: Parsed a local variable declaration for '%s'.\n", yylineno, $2);
-            sym_insert_or_update($2, $1, "variable", NULL, NULL, NULL, 0, current_nesting, yylineno);
+            sym_insert_or_update($2, "identifier", "variable", NULL, NULL, NULL, 0, current_nesting, yylineno);
             free($1); free($2);
         }
     | type_specifier declarator_var op_assign expr p_semicolon
         {
             printf("Line %d: Parsed a local variable declaration with initialization for '%s'.\n", yylineno, $2);
-            sym_insert_or_update($2, $1, "variable", NULL, NULL, NULL, 0, current_nesting, yylineno);
+            sym_insert_or_update($2, "identifier", "variable", NULL, NULL, NULL, 0, current_nesting, yylineno);
             free($1); free($2);
         }
     | type_specifier declarator_array p_semicolon
@@ -368,28 +368,25 @@ declarator_array:
     | IDENTIFIER p_obracket error p_cbracket { yyerrok; $$ = $1; }
     ;
 
-/* MODIFIED: This rule now returns the parameter string ($3) in yylval for function_def to use. */
 declarator_func:
       IDENTIFIER p_oparen params_list p_cparen
         {
             sym_insert_or_update($1, "function", "function", NULL, NULL, $3, 0, current_nesting, yylineno);
-            $$ = $1;   // Pass up function name in $$
-            yylval.str = $3; // Pass up param string in yylval
+            $$ = $1;         
+            yylval.str = $3; 
         }
     ;
 
-/* MODIFIED: This structure correctly handles func(), func(void), and func(int a, ...) without conflicts. */
 params_list:
       /* For functions like func() */
       { $$ = xstrdup(""); }
     | VOID
       {
-          /* For functions like func(void) */
           sym_insert_or_update("void", "keyword", "type", NULL, NULL, NULL, 0, 0, yylineno);
           $$ = xstrdup("void");
       }
     | param_decls
-      { $$ = $1; /* Pass up the concatenated string of parameters */ }
+      { $$ = $1; }
     ;
 
 param_decls:
@@ -410,7 +407,7 @@ param_decls:
 param_decl:
       type_specifier IDENTIFIER
         {
-            sym_insert_or_update($2, $1, "parameter", NULL, NULL, NULL, 0, current_nesting+1, yylineno);
+            sym_insert_or_update($2, "identifier", "parameter", NULL, NULL, NULL, 0, current_nesting+1, yylineno); 
             size_t n = strlen($1) + strlen($2) + 2;
             char *s = malloc(n);
             snprintf(s, n, "%s %s", $1, $2);
@@ -427,10 +424,12 @@ statement:
       expr_stmt
     | printf_stmt
     | return_stmt
-    | decl /* MODIFIED: Use the unified 'decl' rule for declarations as statements. */
+    | decl 
     | if_stmt
     | while_stmt
     | for_stmt
+    | switch_stmt 
+    | break_stmt /* NEW */
     | block
     | p_semicolon
     | error p_semicolon { yyerrok; }
@@ -466,17 +465,57 @@ for_stmt:
         }
     ;
 
+switch_stmt:
+      SWITCH p_oparen expr p_cparen p_ocurly case_list p_ccurly
+        {
+            sym_insert_or_update("switch", "keyword", "control", NULL, NULL, NULL, 0, 0, yylineno);
+            printf("Line %d: Parsed a switch statement.\n", yylineno);
+        }
+    ;
+
+case_list:
+      /* empty */
+    | case_list case_block
+    ;
+
+case_block:
+      case_labels stmt_list
+    ;
+
+case_labels:
+      case_label
+    | case_labels case_label
+    ;
+
+case_label:
+      CASE primary_expr p_colon
+        {
+            sym_insert_or_update("case", "keyword", "label", NULL, NULL, NULL, 0, 0, yylineno);
+        }
+    | DEFAULT p_colon
+        {
+            sym_insert_or_update("default", "keyword", "label", NULL, NULL, NULL, 0, 0, yylineno);
+        }
+    ;
+
+/* --- NEW RULE FOR BREAK --- */
+break_stmt:
+      BREAK p_semicolon
+        {
+            sym_insert_or_update("break", "keyword", "control", NULL, NULL, NULL, 0, 0, yylineno);
+            printf("Line %d: Parsed a break statement.\n", yylineno);
+        }
+    ;
+
 for_init_stmt:
       expr_stmt
-    | decl /* MODIFIED: Declarations in for loops now use the unified rule. */
+    | decl 
     | p_semicolon
     ;
 
 optional_expr:
       | expr
     ;
-
-/* local_decl rule has been removed and merged into the 'decl' rule. */
 
 printf_stmt:
       PRINTF p_oparen STRING_LITERAL p_cparen p_semicolon

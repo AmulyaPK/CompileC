@@ -40,6 +40,10 @@ CHAR_BODY        ([^\\'\n]|\\(.))
 "for"       { return FOR; }
 "while"     { return WHILE; }
 "return"    { return RETURN; }
+"switch"    { return SWITCH; }
+"case"      { return CASE; }
+"default"   { return DEFAULT; }
+"break"     { return BREAK; }
 
 "printf"    { return PRINTF; }
 
@@ -63,6 +67,8 @@ CHAR_BODY        ([^\\'\n]|\\(.))
 ","         { return COMMA; }
 "["         { return OBRACKET; }
 "]"         { return CBRACKET; }
+":"         { return COLON; }
+"&"         { return AMPERSAND; }
 \" {
     char buffer[4096];
     size_t k = 0;
