@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 
 float test2;
 
@@ -16,7 +17,7 @@ union test4
 
 int main (void) {
     int a, b, c;
-    int a[10];
+    int a[3] = {1,2,3};
     x = y + 4;
     printf("Here's the array!\n");
 

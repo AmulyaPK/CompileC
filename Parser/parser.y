@@ -15,7 +15,7 @@ int current_nesting = 0;
 
 /* Global flags to track if we are inside a struct/union definition */
 static int g_in_struct_def = 0;
-static int g_in_union_def = 0; /* NEW */
+static int g_in_union_def = 0; 
 
 // ---------------- SYMBOL TABLE ----------------
 typedef struct Symbol {
@@ -184,16 +184,16 @@ static void print_symbol_table(void) {
     }
 }
 
-/* print constant table */
+/* print constant table -- MODIFIED */
 static void print_const_table(void) {
     printf("\n================= CONSTANT TABLE (Literals Only) =================\n");
-    printf("%-22s %-10s %-12s %-10s %-6s %s\n",
-           "Variable Name", "FirstLine", "Value", "Type", "Count", "RefLines");
-    printf("------------------------------------------------------------------------------\n");
+    printf("%-22s %-10s %-10s %-6s %s\n",
+           "Literal Value", "FirstLine", "Type", "Count", "RefLines");
+    printf("------------------------------------------------------------------\n");
     for (int i = 0 ; i < const_count ; i++) {
         Constant *c = &consttab[i];
-        printf("%-22s %-10d %-12s %-10s %-6d ",
-               c->name, c->first_line, c->value, c->type, c->count);
+        printf("%-22s %-10d %-10s %-6d ",
+               c->name, c->first_line, c->type, c->count);
         if (c->ref_count == 0) {
             printf("-\n");
         } else {
@@ -218,7 +218,7 @@ static void print_const_table(void) {
 %token IF ELSE FOR WHILE RETURN PRINTF
 %token SWITCH CASE DEFAULT BREAK
 %token STRUCT 
-%token UNION /* NEW TOKEN */
+%token UNION 
 %token INCREMENT DECREMENT
 %token EQ NEQ LT GT LE GE
 %token PLUS MINUS MULT DIVIDE
@@ -294,7 +294,7 @@ external_def:
       function_def
     | global_decl
     | struct_definition 
-    | union_definition /* NEW */
+    | union_definition 
     ;
 
 struct_definition:
@@ -307,7 +307,6 @@ struct_definition:
         }
     ;
 
-/* NEW: Rule for union definition */
 union_definition:
     UNION IDENTIFIER p_ocurly { g_in_union_def = 1; current_nesting++; } decl_list p_ccurly { g_in_union_def = 0; current_nesting--; } p_semicolon
         {
@@ -359,7 +358,7 @@ declarator:
         {
             const char* class;
             if (g_in_struct_def) class = "struct_member";
-            else if (g_in_union_def) class = "union_member"; /* NEW */
+            else if (g_in_union_def) class = "union_member"; 
             else class = "variable";
 
             printf("Line %d: Parsed a declaration for '%s'.\n", yylineno, $1);
@@ -368,9 +367,9 @@ declarator:
         }
     | declarator_var op_assign expr
         {
-            const char* class = g_in_struct_def ? "struct_member" : "variable";
+            const char* class;
              if (g_in_struct_def) class = "struct_member";
-            else if (g_in_union_def) class = "union_member"; /* NEW */
+            else if (g_in_union_def) class = "union_member"; 
             else class = "variable";
 
             printf("Line %d: Parsed a declaration with initialization for '%s'.\n", yylineno, $1);
@@ -382,11 +381,35 @@ declarator:
             printf("Line %d: Parsed an array declarator for '%s'.\n", yylineno, $1);
             if (g_in_struct_def) { 
                 sym_insert_or_update($1, "array", "struct_member", NULL, NULL, NULL, 0, 0, -1);
-            } else if (g_in_union_def) { /* NEW */
+            } else if (g_in_union_def) { 
                 sym_insert_or_update($1, "array", "union_member", NULL, NULL, NULL, 0, 0, -1);
             }
             free($1);
         }
+    | declarator_array op_assign initializer_list
+        {
+            printf("Line %d: Parsed an array declaration with initialization for '%s'.\n", yylineno, $1);
+            if (g_in_struct_def) { 
+                sym_insert_or_update($1, "array", "struct_member", NULL, NULL, NULL, 0, 0, -1);
+            } else if (g_in_union_def) {
+                sym_insert_or_update($1, "array", "union_member", NULL, NULL, NULL, 0, 0, -1);
+            }
+            free($1);
+        }
+    ;
+
+initializer_list:
+      p_ocurly optional_expression_list p_ccurly
+    ;
+
+optional_expression_list:
+      /* empty */
+    | expression_list
+    ;
+
+expression_list:
+      expr
+    | expression_list p_comma expr
     ;
 
 type_specifier:
@@ -406,7 +429,7 @@ declarator_array:
             char dims[128]; snprintf(dims,sizeof(dims),"[%s]", $3);
             const char* class;
             if (g_in_struct_def) class = "struct_member";
-            else if (g_in_union_def) class = "union_member"; /* NEW */
+            else if (g_in_union_def) class = "union_member"; 
             else class = "variable";
 
             sym_insert_or_update($1, "array", class, NULL, dims, NULL, 0, current_nesting, yylineno);
