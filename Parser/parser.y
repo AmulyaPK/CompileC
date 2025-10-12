@@ -13,6 +13,10 @@ int yylex();
 extern int yylineno;
 int current_nesting = 0;
 
+/* Global flags to track if we are inside a struct/union definition */
+static int g_in_struct_def = 0;
+static int g_in_union_def = 0; /* NEW */
+
 // ---------------- SYMBOL TABLE ----------------
 typedef struct Symbol {
     char name[MAX_STRLEN];
@@ -212,8 +216,10 @@ static void print_const_table(void) {
 %token <str> IDENTIFIER NUMBER STRING_LITERAL CHAR_LITERAL INCLUDE PREPROCESSOR
 %token INT FLOAT CHAR VOID
 %token IF ELSE FOR WHILE RETURN PRINTF
-%token SWITCH CASE DEFAULT 
-%token BREAK /* NEW TOKEN */
+%token SWITCH CASE DEFAULT BREAK
+%token STRUCT 
+%token UNION /* NEW TOKEN */
+%token INCREMENT DECREMENT
 %token EQ NEQ LT GT LE GE
 %token PLUS MINUS MULT DIVIDE
 %token ASSIGN
@@ -226,6 +232,7 @@ static void print_const_table(void) {
 %left EQ NEQ LT GT LE GE
 %left PLUS MINUS
 %left MULT DIVIDE
+%left INCREMENT DECREMENT
 
 %start program
 %type <str> type_specifier params_list param_decls param_decl declarator_var declarator_array declarator_func
@@ -286,21 +293,34 @@ external_defs:
 external_def:
       function_def
     | global_decl
+    | struct_definition 
+    | union_definition /* NEW */
+    ;
+
+struct_definition:
+    STRUCT IDENTIFIER p_ocurly { g_in_struct_def = 1; current_nesting++; } decl_list p_ccurly { g_in_struct_def = 0; current_nesting--; } p_semicolon
+        {
+            sym_insert_or_update("struct", "keyword", "type", NULL, NULL, NULL, 0, 0, yylineno);
+            sym_insert_or_update($2, "struct_tag", "type", NULL, NULL, NULL, 0, current_nesting, yylineno);
+            printf("Line %d: Parsed a struct definition for 'struct %s'.\n", yylineno, $2);
+            free($2);
+        }
+    ;
+
+/* NEW: Rule for union definition */
+union_definition:
+    UNION IDENTIFIER p_ocurly { g_in_union_def = 1; current_nesting++; } decl_list p_ccurly { g_in_union_def = 0; current_nesting--; } p_semicolon
+        {
+            sym_insert_or_update("union", "keyword", "type", NULL, NULL, NULL, 0, 0, yylineno);
+            sym_insert_or_update($2, "union_tag", "type", NULL, NULL, NULL, 0, current_nesting, yylineno);
+            printf("Line %d: Parsed a union definition for 'union %s'.\n", yylineno, $2);
+            free($2);
+        }
     ;
 
 global_decl:
-      type_specifier declarator_var p_semicolon
-        {
-            printf("Line %d: Parsed a global variable declaration for '%s'.\n", yylineno, $2);
-            sym_insert_or_update($2, "identifier", "variable", NULL, NULL, NULL, 0, current_nesting, yylineno); 
-            free($1); free($2);
-        }
-    | type_specifier declarator_array p_semicolon
-        {
-            printf("Line %d: Parsed a global array declaration.\n", yylineno);
-            free($1);
-        }
-    | type_specifier error p_semicolon { yyerrok; }
+      type_specifier declarator_list p_semicolon { free($1); }
+    | type_specifier error p_semicolon { yyerrok; free($1); }
     ;
 
 function_def:
@@ -316,33 +336,57 @@ function_def:
 
 block:
     p_ocurly { current_nesting++; } decl_list stmt_list p_ccurly { current_nesting--; }
-  | p_ocurly { current_nesting++; } error p_ccurly { yyerrok; current_nesting--; }
   | error p_ccurly { yyerrok; }
     ;
 
 decl_list:
+      /* empty */
     | decl_list decl
     ;
 
 decl:
-    type_specifier declarator_var p_semicolon
+      type_specifier declarator_list p_semicolon { free($1); }
+    | type_specifier error p_semicolon { yyerrok; free($1); }
+    ;
+
+declarator_list:
+      declarator
+    | declarator_list p_comma declarator
+    ;
+
+declarator:
+      declarator_var
         {
-            printf("Line %d: Parsed a local variable declaration for '%s'.\n", yylineno, $2);
-            sym_insert_or_update($2, "identifier", "variable", NULL, NULL, NULL, 0, current_nesting, yylineno);
-            free($1); free($2);
+            const char* class;
+            if (g_in_struct_def) class = "struct_member";
+            else if (g_in_union_def) class = "union_member"; /* NEW */
+            else class = "variable";
+
+            printf("Line %d: Parsed a declaration for '%s'.\n", yylineno, $1);
+            sym_insert_or_update($1, "identifier", class, NULL, NULL, NULL, 0, current_nesting, yylineno);
+            free($1);
         }
-    | type_specifier declarator_var op_assign expr p_semicolon
+    | declarator_var op_assign expr
         {
-            printf("Line %d: Parsed a local variable declaration with initialization for '%s'.\n", yylineno, $2);
-            sym_insert_or_update($2, "identifier", "variable", NULL, NULL, NULL, 0, current_nesting, yylineno);
-            free($1); free($2);
+            const char* class = g_in_struct_def ? "struct_member" : "variable";
+             if (g_in_struct_def) class = "struct_member";
+            else if (g_in_union_def) class = "union_member"; /* NEW */
+            else class = "variable";
+
+            printf("Line %d: Parsed a declaration with initialization for '%s'.\n", yylineno, $1);
+            sym_insert_or_update($1, "identifier", class, NULL, NULL, NULL, 0, current_nesting, yylineno);
+            free($1);
         }
-    | type_specifier declarator_array p_semicolon
-        { 
-            printf("Line %d: Parsed a local array declaration.\n", yylineno);
-            /* Action handled in declarator_array */ 
+    | declarator_array
+        {
+            printf("Line %d: Parsed an array declarator for '%s'.\n", yylineno, $1);
+            if (g_in_struct_def) { 
+                sym_insert_or_update($1, "array", "struct_member", NULL, NULL, NULL, 0, 0, -1);
+            } else if (g_in_union_def) { /* NEW */
+                sym_insert_or_update($1, "array", "union_member", NULL, NULL, NULL, 0, 0, -1);
+            }
+            free($1);
         }
-    | type_specifier error p_semicolon { yyerrok; }
     ;
 
 type_specifier:
@@ -360,7 +404,12 @@ declarator_array:
       IDENTIFIER p_obracket NUMBER p_cbracket
         {
             char dims[128]; snprintf(dims,sizeof(dims),"[%s]", $3);
-            sym_insert_or_update($1, "array", "variable", NULL, dims, NULL, 0, current_nesting, yylineno);
+            const char* class;
+            if (g_in_struct_def) class = "struct_member";
+            else if (g_in_union_def) class = "union_member"; /* NEW */
+            else class = "variable";
+
+            sym_insert_or_update($1, "array", class, NULL, dims, NULL, 0, current_nesting, yylineno);
             const_insert_or_bump($3, "int", yylineno);
             free($3);
             $$ = $1;
@@ -429,7 +478,7 @@ statement:
     | while_stmt
     | for_stmt
     | switch_stmt 
-    | break_stmt /* NEW */
+    | break_stmt 
     | block
     | p_semicolon
     | error p_semicolon { yyerrok; }
@@ -498,7 +547,6 @@ case_label:
         }
     ;
 
-/* --- NEW RULE FOR BREAK --- */
 break_stmt:
       BREAK p_semicolon
         {
@@ -586,9 +634,27 @@ add_expr:
     ;
 
 mul_expr:
+      postfix_expr 
+    | mul_expr op_mult postfix_expr 
+    | mul_expr op_divide postfix_expr 
+    ;
+
+postfix_expr:
       primary_expr
-    | mul_expr op_mult primary_expr
-    | mul_expr op_divide primary_expr
+    | IDENTIFIER INCREMENT
+        {
+            sym_add_reference($1, yylineno);
+            sym_insert_or_update("++", "operator", "postfix", NULL, NULL, NULL, 0, 0, yylineno);
+            printf("Line %d: Parsed a post-increment operation on '%s'.\n", yylineno, $1);
+            free($1);
+        }
+    | IDENTIFIER DECREMENT
+        {
+            sym_add_reference($1, yylineno);
+            sym_insert_or_update("--", "operator", "postfix", NULL, NULL, NULL, 0, 0, yylineno);
+            printf("Line %d: Parsed a post-decrement operation on '%s'.\n", yylineno, $1);
+            free($1);
+        }
     ;
 
 primary_expr:

@@ -44,8 +44,13 @@ CHAR_BODY        ([^\\'\n]|\\(.))
 "case"      { return CASE; }
 "default"   { return DEFAULT; }
 "break"     { return BREAK; }
+"struct"    { return STRUCT; }
+"union"     { return UNION; }
 
 "printf"    { return PRINTF; }
+
+"++"        { return INCREMENT; }
+"--"        { return DECREMENT; }
 
 "=="        { return EQ; }
 "!="        { return NEQ; }
@@ -68,7 +73,7 @@ CHAR_BODY        ([^\\'\n]|\\(.))
 "["         { return OBRACKET; }
 "]"         { return CBRACKET; }
 ":"         { return COLON; }
-"&"         { return AMPERSAND; }
+
 \" {
     char buffer[4096];
     size_t k = 0;

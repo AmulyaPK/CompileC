@@ -2,13 +2,25 @@
 
 float test2;
 
+struct test3
+{
+    int st1;
+    char st2;
+};
+
+union test4
+{
+    int st3;
+    char st4;
+};
+
 int main (void) {
     int a, b, c;
     int a[10];
     x = y + 4;
     printf("Here's the array!\n");
 
-    for(int i = 0; i < 10; i = i + 1) 
+    for(int i = 0; i < 10; i++) 
     {
         if(c < 10)
         {

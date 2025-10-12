@@ -74,30 +74,34 @@ extern int yydebug;
     CASE = 275,                    /* CASE  */
     DEFAULT = 276,                 /* DEFAULT  */
     BREAK = 277,                   /* BREAK  */
-    EQ = 278,                      /* EQ  */
-    NEQ = 279,                     /* NEQ  */
-    LT = 280,                      /* LT  */
-    GT = 281,                      /* GT  */
-    LE = 282,                      /* LE  */
-    GE = 283,                      /* GE  */
-    PLUS = 284,                    /* PLUS  */
-    MINUS = 285,                   /* MINUS  */
-    MULT = 286,                    /* MULT  */
-    DIVIDE = 287,                  /* DIVIDE  */
-    ASSIGN = 288,                  /* ASSIGN  */
-    OPAREN = 289,                  /* OPAREN  */
-    CPAREN = 290,                  /* CPAREN  */
-    OCURLY = 291,                  /* OCURLY  */
-    CCURLY = 292,                  /* CCURLY  */
-    SEMICOLON = 293,               /* SEMICOLON  */
-    COMMA = 294,                   /* COMMA  */
-    COLON = 295,                   /* COLON  */
-    OBRACKET = 296,                /* OBRACKET  */
-    CBRACKET = 297,                /* CBRACKET  */
-    QUOTE = 298,                   /* QUOTE  */
-    UNMATCHEDSTRING = 299,         /* UNMATCHEDSTRING  */
-    UNMATCHEDCOMMENT = 300,        /* UNMATCHEDCOMMENT  */
-    IFX = 301                      /* IFX  */
+    STRUCT = 278,                  /* STRUCT  */
+    UNION = 279,                   /* UNION  */
+    INCREMENT = 280,               /* INCREMENT  */
+    DECREMENT = 281,               /* DECREMENT  */
+    EQ = 282,                      /* EQ  */
+    NEQ = 283,                     /* NEQ  */
+    LT = 284,                      /* LT  */
+    GT = 285,                      /* GT  */
+    LE = 286,                      /* LE  */
+    GE = 287,                      /* GE  */
+    PLUS = 288,                    /* PLUS  */
+    MINUS = 289,                   /* MINUS  */
+    MULT = 290,                    /* MULT  */
+    DIVIDE = 291,                  /* DIVIDE  */
+    ASSIGN = 292,                  /* ASSIGN  */
+    OPAREN = 293,                  /* OPAREN  */
+    CPAREN = 294,                  /* CPAREN  */
+    OCURLY = 295,                  /* OCURLY  */
+    CCURLY = 296,                  /* CCURLY  */
+    SEMICOLON = 297,               /* SEMICOLON  */
+    COMMA = 298,                   /* COMMA  */
+    COLON = 299,                   /* COLON  */
+    OBRACKET = 300,                /* OBRACKET  */
+    CBRACKET = 301,                /* CBRACKET  */
+    QUOTE = 302,                   /* QUOTE  */
+    UNMATCHEDSTRING = 303,         /* UNMATCHEDSTRING  */
+    UNMATCHEDCOMMENT = 304,        /* UNMATCHEDCOMMENT  */
+    IFX = 305                      /* IFX  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -106,12 +110,12 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 207 "parser.y"
+#line 211 "parser.y"
 
     int num;
     char *str;
 
-#line 115 "parser.tab.h"
+#line 119 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
