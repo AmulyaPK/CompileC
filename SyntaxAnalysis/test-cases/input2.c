@@ -1,11 +1,8 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_VAL 100
-#define MIN_VAL 0
 
-/* compute_gcd: returns gcd of a and b */
 int compute_gcd(int a, int b) {
     if (a == 0) return b;
     if (b == 0) return a;
@@ -20,7 +17,7 @@ int compute_gcd(int a, int b) {
 int add_and_check(int x, int y) {
     int s = x + y;
     if (s > MAX_VAL) {
-        printf("Warning: sum %d exceeds MAX_VAL (%d)\n", s, MAX_VAL);
+        printf("Warning: sum %d exceeds MAX_VAL (%d)\n");
     }
     return s;
 }
@@ -38,11 +35,10 @@ int main(void) {
 
     int c = 7     // <-- Intentional error: missing semicolon here
     int d = 3;
-    int result = c + * d;  /* Intentional malformed expression to trigger parser error */
+    int result = c + * d;  
     printf("result = %d\n", result);
 
-    /* A small loop */
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 5; i++) {
         printf("i = %d\n", i);
     }
 
