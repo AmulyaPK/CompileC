@@ -235,7 +235,7 @@ static void print_const_table(void) {
 %left INCREMENT DECREMENT
 
 %start program
-%type <str> type_specifier params_list param_decls param_decl declarator_var declarator_array declarator_func
+%type <str> type_specifier params_list param_decls param_decl declarator_var declarator_array declarator_func save_params
 
 %%
 /* --- Helper rules to capture every token --- */
@@ -321,17 +321,23 @@ global_decl:
       type_specifier declarator_list p_semicolon { free($1); }
     | type_specifier error p_semicolon { yyerrok; free($1); }
     ;
+save_params:
+    /* empty */ { $$ = yylval.str; }
+    ;
 
 function_def:
-    type_specifier declarator_func block
+    type_specifier declarator_func save_params block
     {
         printf("Line %d: Parsed a function definition for '%s'.\n", yylineno, $2);
         if($2) { 
-            sym_insert_or_update($2, $1, "function", NULL, NULL, yylval.str, 1, current_nesting, yylineno);
+            /* Use $3, which now safely holds the parameter string */
+            sym_insert_or_update($2, $1, "function", NULL, NULL, $3, 1, current_nesting, yylineno);
             free($2);
+            free($3); /* Free the memory for the parameter string */
         }
         free($1);
     };
+
 
 block:
     p_ocurly { current_nesting++; } decl_list stmt_list p_ccurly { current_nesting--; }
@@ -443,9 +449,8 @@ declarator_array:
 declarator_func:
       IDENTIFIER p_oparen params_list p_cparen
         {
-            sym_insert_or_update($1, "function", "function", NULL, NULL, $3, 0, current_nesting, yylineno);
-            $$ = $1;         
-            yylval.str = $3; 
+            $$ = $1;         /* Pass up function name in $$ */
+            yylval.str = $3; /* Pass up param string using yylval */
         }
     ;
 
