@@ -58,4 +58,5 @@ char test(int e, float f)
 void consume()
 {
     char g = 'c';
+    float f = 12.4;
 }
