@@ -26,6 +26,7 @@ WS      [ \t\r\f\v]+
 "else"      { return ELSE; }
 "for"       { return FOR; }
 "while"     { return WHILE; }
+"do"        { return DO; }
 "return"    { return RETURN; }
 "switch"    { return SWITCH; }
 "case"      { return CASE; }
