@@ -1,4 +1,4 @@
-﻿%{
+%{
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -51,11 +51,11 @@ struct node* head;
 %%
 
 program:
-    preamble external_defs
+    preamble external_defs { $$.nd = make_node($1.nd, $2.nd, "program"); head = $$.nd; }
     ;
 
 preamble:
-    preamble INCLUDE
+    preamble INCLUDE        {  }
     | preamble PREPROCESSOR
     ;
 
