@@ -1,4 +1,5 @@
 %{
+// with parse_tree.y
 #include"parse_tree.tab.h"
 #include<stdio.h>
 #include<string.h>
@@ -35,7 +36,7 @@ WS      [ \t\r\f\v]+
 "union"     { strcpy(yylval.nd_obj.name,(yytext)); return UNION; }
 "printf"    { strcpy(yylval.nd_obj.name,(yytext)); return PRINTF; }
 
-"#include"[ \t]*<[a-zA-Z0-9._/]+>   { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; }
+"#include"[ \t]*"<"[a-zA-Z0-9._/]+">"   { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; }
 "true"      { strcpy(yylval.nd_obj.name,(yytext)); return TRUE; }
 "false"     { strcpy(yylval.nd_obj.name,(yytext)); return FALSE; }
 {UNARY}     { strcpy(yylval.nd_obj.name,(yytext)); return UNARY; }

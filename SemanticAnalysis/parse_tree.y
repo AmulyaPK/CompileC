@@ -1,4 +1,5 @@
 %{
+// with scanner.l
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -10,21 +11,7 @@ int yywrap ();
 void add (char c);
 void insert_type ();
 int search (char *);
-void print_tree (struct node** nd) {
-    printf("Inorder traversal of the parse tree: \n");
-    print_inorder(&nd);
-    printf("\n\n");
-    return;
-}
 
-
-void print_inorder (struct node** nd) {
-    if (!&nd) return;
-    if ((&nd).left) print_inorder((*nd)->left);
-    if (*nd->token) printf("%s, ", *nd->token);
-    if (*nd->right) print_inorder(*nd->right);
-    return;
-}
 struct node* make_node (struct node* left, struct node* right, char *token);
 
 struct node {
@@ -45,6 +32,21 @@ int q;
 char type[20];
 extern int count;
 struct node* head;
+
+void print_inorder (struct node* nd) {
+    if (!nd) return;
+    if (nd->left) print_inorder((nd)->left);
+    if (nd->token) printf("%s, ", nd->token);
+    if (nd->right) print_inorder(nd->right);
+    return;
+}
+
+void print_tree (struct node* nd) {
+    printf("Inorder traversal of the parse tree: \n");
+    print_inorder(nd);
+    printf("\n\n");
+    return;
+}
 
 %}
 
@@ -176,14 +178,14 @@ declarator_var:
 
 declarator_array:
     IDENTIFIER OBRACKET NUMBER CBRACKET
-    { add('V'); struct node *id = make_node(NULL,NULL,strdup(yytext)); struct node *num = make_node(NULL,NULL,strdup(yytext)); $$.nd = make_node(id, num, "array_decl"); }
+    { add('V'); struct node *id = make_node(NULL,NULL,strdup(yylex)); struct node *num = make_node(NULL,NULL,strdup(yylex)); $$.nd = make_node(id, num, "array_decl"); }
     | IDENTIFIER OBRACKET error CBRACKET
     { add('V'); $$.nd = make_node(NULL,NULL,"array_decl_err"); }
     ;
 
 declarator_func:
     IDENTIFIER OPAREN params_list CPAREN
-    { add('V'); struct node *id = make_node(NULL,NULL,strdup(yytext)); $$.nd = make_node(id, $3.nd, "func_decl"); }
+    { add('V'); struct node *id = make_node(NULL,NULL,strdup(yylex)); $$.nd = make_node(id, $3.nd, "func_decl"); }
     ;
 
 params_list:
@@ -198,7 +200,7 @@ param_decls:
     ;
 
 param_decl:
-    type_specifier IDENTIFIER { $$.nd = make_node($1.nd, make_node(NULL,NULL,strdup(yytext)), "param"); }
+    type_specifier IDENTIFIER { $$.nd = make_node($1.nd, make_node(NULL,NULL,strdup(yylex)), "param"); }
     ;
 
 stmt_list:
@@ -285,16 +287,16 @@ optional_expr:
 
 printf_stmt:
     PRINTF OPAREN STRING_LITERAL CPAREN SEMICOLON
-    { $$.nd = make_node(NULL, make_node(NULL,NULL,strdup(yytext)), "printf"); }
+    { $$.nd = make_node(NULL, make_node(NULL,NULL,strdup(yylex)), "printf"); }
     | PRINTF OPAREN STRING_LITERAL COMMA IDENTIFIER CPAREN SEMICOLON
-    { $$.nd = make_node(make_node(NULL,NULL,strdup(yytext)), make_node(NULL,NULL,strdup(yytext)), "printf2"); }
+    { $$.nd = make_node(make_node(NULL,NULL,strdup(yylex)), make_node(NULL,NULL,strdup(yylex)), "printf2"); }
     | PRINTF OPAREN error CPAREN SEMICOLON
     { $$.nd = make_node(NULL,NULL,"printf_err"); }
     ;
 
 return_stmt:
-    RETURN NUMBER SEMICOLON { $$.nd = make_node(NULL, make_node(NULL,NULL,strdup(yytext)), "return"); }
-    | RETURN IDENTIFIER SEMICOLON { $$.nd = make_node(NULL, make_node(NULL,NULL,strdup(yytext)), "return_id"); }
+    RETURN NUMBER SEMICOLON { $$.nd = make_node(NULL, make_node(NULL,NULL,strdup(yylex)), "return"); }
+    | RETURN IDENTIFIER SEMICOLON { $$.nd = make_node(NULL, make_node(NULL,NULL,strdup(yylex)), "return_id"); }
     | RETURN error SEMICOLON { $$.nd = make_node(NULL,NULL,"return_err"); }
     ;
 
@@ -304,7 +306,7 @@ expr_stmt:
     ;
 
 expr:
-    IDENTIFIER /*op_assign*/ expr { $$.nd = make_node(make_node(NULL,NULL,strdup(yytext)), $2.nd, "assign"); }
+    IDENTIFIER /*op_assign*/ expr { $$.nd = make_node(make_node(NULL,NULL,strdup(yylex)), $2.nd, "assign"); }
     | cond_expr { $$.nd = $1.nd; }
     ;
 
@@ -332,15 +334,15 @@ mult_expr:
 
 postfix_expr:
     primary_expr { $$.nd = $1.nd; }
-    | IDENTIFIER UNARY { $$.nd = make_node(make_node(NULL,NULL,strdup(yytext)), NULL, "postfix_unary"); }
+    | IDENTIFIER UNARY { $$.nd = make_node(make_node(NULL,NULL,strdup(yylex)), NULL, "postfix_unary"); }
     ;
 
 primary_expr:
-    IDENTIFIER { add('V'); $$.nd = make_node(NULL, NULL, strdup(yytext)); }
-    | NUMBER     { add('C'); $$.nd = make_node(NULL, NULL, strdup(yytext)); }
-    | FLOAT      { add('C'); $$.nd = make_node(NULL, NULL, strdup(yytext)); }
-    | STRING_LITERAL { add('C'); $$.nd = make_node(NULL, NULL, strdup(yytext)); }
-    | CHAR_LITERAL   { add('C'); $$.nd = make_node(NULL, NULL, strdup(yytext)); }
+    IDENTIFIER { add('V'); $$.nd = make_node(NULL, NULL, strdup(yylex)); }
+    | NUMBER     { add('C'); $$.nd = make_node(NULL, NULL, strdup(yylex)); }
+    | FLOAT      { add('C'); $$.nd = make_node(NULL, NULL, strdup(yylex)); }
+    | STRING_LITERAL { add('C'); $$.nd = make_node(NULL, NULL, strdup(yylex)); }
+    | CHAR_LITERAL   { add('C'); $$.nd = make_node(NULL, NULL, strdup(yylex)); }
     | OPAREN expr CPAREN { $$.nd = $2.nd; }
     ;
 
@@ -412,21 +414,43 @@ struct node* make_node (struct node* left, struct node* right, char *token) {
     return new_node;
 }
 
-int main () {
-    yyparse();
-    printf("-----------------------LEXICAL ANALYSIS-------------------------\n");
-    printf(" SYMBOL        | DATATYPE      | TYPE          | LINE NUMBER   |\n");
-    for (int i = 0 ; i < ind ; i++) {
-        printf("%15s|%15s|%15s|%15d\n", symbol_table[i].id_name, symbol_table[i].data_type, symbol_table[i].type, symbol_table[i].line_no);
-    }
-    for (int i = 0 ; i < ind ; i++) {
-        free(symbol_table[i].id_name);
-        free(symbol_table[i].type);
+int main (int argc, char **argv) {
+
+    if (argc < 2) {
+        printf("Usage: %s <source.c>\n", argv[0]);
+        return 1;
     }
 
-    printf("\n\n");
-    printf("---------------------SYNTAX ANALYSIS--------------------------\n");
-    print_tree(head);
-    printf("\n\n");
+    FILE *file = fopen(argv[1], "r");
+    if (!file) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    extern FILE *yyin;
+    yyin = file;
+
+    if (yyparse() == 0) {
+        printf("\nParsing successfully completed\n");
+        printf("-----------------------LEXICAL ANALYSIS-------------------------\n");
+        printf(" SYMBOL        | DATATYPE      | TYPE          | LINE NUMBER   |\n");
+        for (int i = 0 ; i < ind ; i++) {
+            printf("%15s|%15s|%15s|%15d\n", symbol_table[i].id_name, symbol_table[i].data_type, symbol_table[i].type, symbol_table[i].line_no);
+        }
+        for (int i = 0 ; i < ind ; i++) {
+            free(symbol_table[i].id_name);
+            free(symbol_table[i].type);
+        }
+
+        printf("\n\n");
+        printf("---------------------SYNTAX ANALYSIS--------------------------\n");
+        print_tree(head);
+        printf("\n\n");
+    }
+    else {
+        fprintf(stderr, "Parsing failed!\n");
+    }
+
+    fclose(file);
     return 0;
 }

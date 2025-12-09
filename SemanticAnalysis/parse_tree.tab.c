@@ -81,21 +81,7 @@ int yywrap ();
 void add (char c);
 void insert_type ();
 int search (char *);
-void print_tree (struct node** nd) {
-    printf("Inorder traversal of the parse tree: \n");
-    print_inorder(&nd);
-    printf("\n\n");
-    return;
-}
 
-
-void print_inorder (struct node** nd) {
-    if (!&nd) return;
-    if ((&nd).left) print_inorder((*nd)->left);
-    if (*nd->token) printf("%s, ", *nd->token);
-    if (*nd->right) print_inorder(*nd->right);
-    return;
-}
 struct node* make_node (struct node* left, struct node* right, char *token);
 
 struct node {
@@ -117,10 +103,25 @@ char type[20];
 extern int count;
 struct node* head;
 
+void print_inorder (struct node* nd) {
+    if (!nd) return;
+    if (nd->left) print_inorder((nd)->left);
+    if (nd->token) printf("%s, ", nd->token);
+    if (nd->right) print_inorder(nd->right);
+    return;
+}
+
+void print_tree (struct node* nd) {
+    printf("Inorder traversal of the parse tree: \n");
+    print_inorder(nd);
+    printf("\n\n");
+    return;
+}
+
 
 
 /* Line 189 of yacc.c  */
-#line 124 "parse_tree.tab.c"
+#line 125 "parse_tree.tab.c"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -204,7 +205,7 @@ typedef union YYSTYPE
 {
 
 /* Line 214 of yacc.c  */
-#line 51 "parse_tree.y"
+#line 52 "parse_tree.y"
 
     struct var_name {
         char name[100];
@@ -214,7 +215,7 @@ typedef union YYSTYPE
 
 
 /* Line 214 of yacc.c  */
-#line 218 "parse_tree.tab.c"
+#line 219 "parse_tree.tab.c"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -226,7 +227,7 @@ typedef union YYSTYPE
 
 
 /* Line 264 of yacc.c  */
-#line 230 "parse_tree.tab.c"
+#line 231 "parse_tree.tab.c"
 
 #ifdef short
 # undef short
@@ -559,18 +560,18 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,    66,    66,    70,    71,    72,    76,    77,    81,    82,
-      83,    84,    88,    96,   104,   106,   111,   115,   122,   124,
-     129,   130,   134,   136,   141,   142,   146,   147,   148,   149,
-     153,   157,   158,   162,   163,   167,   168,   169,   170,   174,
-     178,   180,   185,   190,   191,   192,   196,   197,   201,   205,
-     206,   210,   211,   212,   213,   214,   215,   216,   217,   218,
-     219,   220,   221,   222,   226,   228,   233,   238,   243,   248,
-     253,   254,   258,   262,   263,   267,   268,   272,   276,   277,
-     278,   282,   283,   287,   289,   291,   296,   297,   298,   302,
-     303,   307,   308,   312,   313,   314,   315,   316,   317,   318,
-     322,   323,   324,   328,   329,   330,   334,   335,   339,   340,
-     341,   342,   343,   344
+       0,    67,    67,    71,    72,    73,    77,    78,    82,    83,
+      84,    85,    89,    97,   105,   107,   112,   116,   123,   125,
+     130,   131,   135,   137,   142,   143,   147,   148,   149,   150,
+     154,   158,   159,   163,   164,   168,   169,   170,   171,   175,
+     179,   181,   186,   191,   192,   193,   197,   198,   202,   206,
+     207,   211,   212,   213,   214,   215,   216,   217,   218,   219,
+     220,   221,   222,   223,   227,   229,   234,   239,   244,   249,
+     254,   255,   259,   263,   264,   268,   269,   273,   277,   278,
+     279,   283,   284,   288,   290,   292,   297,   298,   299,   303,
+     304,   308,   309,   313,   314,   315,   316,   317,   318,   319,
+     323,   324,   325,   329,   330,   331,   335,   336,   340,   341,
+     342,   343,   344,   345
 };
 #endif
 
@@ -1633,77 +1634,77 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 66 "parse_tree.y"
+#line 67 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, (yyvsp[(2) - (2)].nd_obj).nd, "program"); head = (yyval.nd_obj).nd; ;}
     break;
 
   case 3:
 
 /* Line 1455 of yacc.c  */
-#line 70 "parse_tree.y"
+#line 71 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, make_node(NULL, NULL, strdup(yylex)), "include"); ;}
     break;
 
   case 4:
 
 /* Line 1455 of yacc.c  */
-#line 71 "parse_tree.y"
+#line 72 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, make_node(NULL, NULL, strdup(yylex)), "preproc"); ;}
     break;
 
   case 5:
 
 /* Line 1455 of yacc.c  */
-#line 72 "parse_tree.y"
+#line 73 "parse_tree.y"
     { (yyval.nd_obj).nd = NULL; ;}
     break;
 
   case 6:
 
 /* Line 1455 of yacc.c  */
-#line 76 "parse_tree.y"
+#line 77 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, (yyvsp[(2) - (2)].nd_obj).nd, "external_defs"); ;}
     break;
 
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 77 "parse_tree.y"
+#line 78 "parse_tree.y"
     { (yyval.nd_obj).nd = NULL; ;}
     break;
 
   case 8:
 
 /* Line 1455 of yacc.c  */
-#line 81 "parse_tree.y"
+#line 82 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 9:
 
 /* Line 1455 of yacc.c  */
-#line 82 "parse_tree.y"
+#line 83 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 10:
 
 /* Line 1455 of yacc.c  */
-#line 83 "parse_tree.y"
+#line 84 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 84 "parse_tree.y"
+#line 85 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 89 "parse_tree.y"
+#line 90 "parse_tree.y"
     {
         struct node *idnode = make_node(NULL, NULL, strdup(yylex));
         (yyval.nd_obj).nd = make_node(idnode, (yyvsp[(4) - (6)].nd_obj).nd, "struct_def");
@@ -1713,7 +1714,7 @@ yyreduce:
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 97 "parse_tree.y"
+#line 98 "parse_tree.y"
     {
         struct node *idnode = make_node(NULL, NULL, strdup(yylex));
         (yyval.nd_obj).nd = make_node(idnode, (yyvsp[(4) - (6)].nd_obj).nd, "union_def");
@@ -1723,28 +1724,28 @@ yyreduce:
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 105 "parse_tree.y"
+#line 106 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(2) - (3)].nd_obj).nd, "global_decl"); ;}
     break;
 
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 107 "parse_tree.y"
+#line 108 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, make_node(NULL,NULL,"ERROR_DECL"), "global_decl_err"); ;}
     break;
 
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 111 "parse_tree.y"
+#line 112 "parse_tree.y"
     { (yyval.nd_obj).nd = NULL; ;}
     break;
 
   case 17:
 
 /* Line 1455 of yacc.c  */
-#line 116 "parse_tree.y"
+#line 117 "parse_tree.y"
     {
         (yyval.nd_obj).nd = make_node(make_node((yyvsp[(1) - (4)].nd_obj).nd, (yyvsp[(2) - (4)].nd_obj).nd, "func_head"), (yyvsp[(4) - (4)].nd_obj).nd, "function_def");
     ;}
@@ -1753,679 +1754,679 @@ yyreduce:
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 123 "parse_tree.y"
+#line 124 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(2) - (4)].nd_obj).nd, (yyvsp[(3) - (4)].nd_obj).nd, "block"); ;}
     break;
 
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 125 "parse_tree.y"
+#line 126 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(NULL, make_node(NULL,NULL,"ERROR_BLOCK"), "block_err"); ;}
     break;
 
   case 20:
 
 /* Line 1455 of yacc.c  */
-#line 129 "parse_tree.y"
+#line 130 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, (yyvsp[(2) - (2)].nd_obj).nd, "decl_list"); ;}
     break;
 
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 130 "parse_tree.y"
+#line 131 "parse_tree.y"
     { (yyval.nd_obj).nd = NULL; ;}
     break;
 
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 135 "parse_tree.y"
+#line 136 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(2) - (3)].nd_obj).nd, "decl"); ;}
     break;
 
   case 23:
 
 /* Line 1455 of yacc.c  */
-#line 137 "parse_tree.y"
+#line 138 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, make_node(NULL,NULL,"ERROR_DECL"), "decl_err"); ;}
     break;
 
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 141 "parse_tree.y"
+#line 142 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 142 "parse_tree.y"
+#line 143 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, "declarator_list"); ;}
     break;
 
   case 26:
 
 /* Line 1455 of yacc.c  */
-#line 146 "parse_tree.y"
+#line 147 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 27:
 
 /* Line 1455 of yacc.c  */
-#line 147 "parse_tree.y"
+#line 148 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, (yyvsp[(2) - (2)].nd_obj).nd, "decl_assign"); ;}
     break;
 
   case 28:
 
 /* Line 1455 of yacc.c  */
-#line 148 "parse_tree.y"
+#line 149 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 29:
 
 /* Line 1455 of yacc.c  */
-#line 149 "parse_tree.y"
+#line 150 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, (yyvsp[(2) - (2)].nd_obj).nd, "decl_array_init"); ;}
     break;
 
   case 30:
 
 /* Line 1455 of yacc.c  */
-#line 153 "parse_tree.y"
+#line 154 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(NULL, (yyvsp[(2) - (3)].nd_obj).nd, "init_list"); ;}
     break;
 
   case 31:
 
 /* Line 1455 of yacc.c  */
-#line 157 "parse_tree.y"
+#line 158 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 32:
 
 /* Line 1455 of yacc.c  */
-#line 158 "parse_tree.y"
+#line 159 "parse_tree.y"
     { (yyval.nd_obj).nd = NULL; ;}
     break;
 
   case 33:
 
 /* Line 1455 of yacc.c  */
-#line 162 "parse_tree.y"
+#line 163 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 34:
 
 /* Line 1455 of yacc.c  */
-#line 163 "parse_tree.y"
+#line 164 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, "expr_list"); ;}
     break;
 
   case 35:
 
 /* Line 1455 of yacc.c  */
-#line 167 "parse_tree.y"
+#line 168 "parse_tree.y"
     { insert_type(); (yyval.nd_obj).nd = make_node(NULL, NULL, "int"); ;}
     break;
 
   case 36:
 
 /* Line 1455 of yacc.c  */
-#line 168 "parse_tree.y"
+#line 169 "parse_tree.y"
     { insert_type(); (yyval.nd_obj).nd = make_node(NULL, NULL, "float"); ;}
     break;
 
   case 37:
 
 /* Line 1455 of yacc.c  */
-#line 169 "parse_tree.y"
+#line 170 "parse_tree.y"
     { insert_type(); (yyval.nd_obj).nd = make_node(NULL, NULL, "char"); ;}
     break;
 
   case 38:
 
 /* Line 1455 of yacc.c  */
-#line 170 "parse_tree.y"
+#line 171 "parse_tree.y"
     { insert_type(); (yyval.nd_obj).nd = make_node(NULL, NULL, "void"); ;}
     break;
 
   case 39:
 
 /* Line 1455 of yacc.c  */
-#line 174 "parse_tree.y"
+#line 175 "parse_tree.y"
     { add('V'); (yyval.nd_obj).nd = make_node(NULL, NULL, strdup(yylex)); ;}
     break;
 
   case 40:
 
 /* Line 1455 of yacc.c  */
-#line 179 "parse_tree.y"
-    { add('V'); struct node *id = make_node(NULL,NULL,strdup(yytext)); struct node *num = make_node(NULL,NULL,strdup(yytext)); (yyval.nd_obj).nd = make_node(id, num, "array_decl"); ;}
+#line 180 "parse_tree.y"
+    { add('V'); struct node *id = make_node(NULL,NULL,strdup(yylex)); struct node *num = make_node(NULL,NULL,strdup(yylex)); (yyval.nd_obj).nd = make_node(id, num, "array_decl"); ;}
     break;
 
   case 41:
 
 /* Line 1455 of yacc.c  */
-#line 181 "parse_tree.y"
+#line 182 "parse_tree.y"
     { add('V'); (yyval.nd_obj).nd = make_node(NULL,NULL,"array_decl_err"); ;}
     break;
 
   case 42:
 
 /* Line 1455 of yacc.c  */
-#line 186 "parse_tree.y"
-    { add('V'); struct node *id = make_node(NULL,NULL,strdup(yytext)); (yyval.nd_obj).nd = make_node(id, (yyvsp[(3) - (4)].nd_obj).nd, "func_decl"); ;}
+#line 187 "parse_tree.y"
+    { add('V'); struct node *id = make_node(NULL,NULL,strdup(yylex)); (yyval.nd_obj).nd = make_node(id, (yyvsp[(3) - (4)].nd_obj).nd, "func_decl"); ;}
     break;
 
   case 43:
 
 /* Line 1455 of yacc.c  */
-#line 190 "parse_tree.y"
+#line 191 "parse_tree.y"
     { (yyval.nd_obj).nd = NULL; ;}
     break;
 
   case 44:
 
 /* Line 1455 of yacc.c  */
-#line 191 "parse_tree.y"
+#line 192 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(NULL,NULL,"void"); ;}
     break;
 
   case 45:
 
 /* Line 1455 of yacc.c  */
-#line 192 "parse_tree.y"
+#line 193 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 46:
 
 /* Line 1455 of yacc.c  */
-#line 196 "parse_tree.y"
+#line 197 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 47:
 
 /* Line 1455 of yacc.c  */
-#line 197 "parse_tree.y"
+#line 198 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, "param_decls"); ;}
     break;
 
   case 48:
 
 /* Line 1455 of yacc.c  */
-#line 201 "parse_tree.y"
-    { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, make_node(NULL,NULL,strdup(yytext)), "param"); ;}
+#line 202 "parse_tree.y"
+    { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, make_node(NULL,NULL,strdup(yylex)), "param"); ;}
     break;
 
   case 49:
 
 /* Line 1455 of yacc.c  */
-#line 205 "parse_tree.y"
+#line 206 "parse_tree.y"
     { (yyval.nd_obj).nd = NULL; ;}
     break;
 
   case 50:
 
 /* Line 1455 of yacc.c  */
-#line 206 "parse_tree.y"
+#line 207 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, (yyvsp[(2) - (2)].nd_obj).nd, "stmts"); ;}
     break;
 
   case 51:
 
 /* Line 1455 of yacc.c  */
-#line 210 "parse_tree.y"
+#line 211 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 52:
 
 /* Line 1455 of yacc.c  */
-#line 211 "parse_tree.y"
+#line 212 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 53:
 
 /* Line 1455 of yacc.c  */
-#line 212 "parse_tree.y"
+#line 213 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 54:
 
 /* Line 1455 of yacc.c  */
-#line 213 "parse_tree.y"
+#line 214 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 55:
 
 /* Line 1455 of yacc.c  */
-#line 214 "parse_tree.y"
+#line 215 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 56:
 
 /* Line 1455 of yacc.c  */
-#line 215 "parse_tree.y"
+#line 216 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 57:
 
 /* Line 1455 of yacc.c  */
-#line 216 "parse_tree.y"
+#line 217 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 58:
 
 /* Line 1455 of yacc.c  */
-#line 217 "parse_tree.y"
+#line 218 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 59:
 
 /* Line 1455 of yacc.c  */
-#line 218 "parse_tree.y"
+#line 219 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 60:
 
 /* Line 1455 of yacc.c  */
-#line 219 "parse_tree.y"
+#line 220 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 61:
 
 /* Line 1455 of yacc.c  */
-#line 220 "parse_tree.y"
+#line 221 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 62:
 
 /* Line 1455 of yacc.c  */
-#line 221 "parse_tree.y"
+#line 222 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(NULL,NULL,";"); ;}
     break;
 
   case 63:
 
 /* Line 1455 of yacc.c  */
-#line 222 "parse_tree.y"
+#line 223 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(NULL,NULL,"ERROR_SEMI"); ;}
     break;
 
   case 64:
 
 /* Line 1455 of yacc.c  */
-#line 227 "parse_tree.y"
+#line 228 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(3) - (7)].nd_obj).nd, (yyvsp[(6) - (7)].nd_obj).nd, "if"); ;}
     break;
 
   case 65:
 
 /* Line 1455 of yacc.c  */
-#line 229 "parse_tree.y"
+#line 230 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(make_node((yyvsp[(3) - (11)].nd_obj).nd,(yyvsp[(6) - (11)].nd_obj).nd,"if"), (yyvsp[(10) - (11)].nd_obj).nd, "if_else"); ;}
     break;
 
   case 66:
 
 /* Line 1455 of yacc.c  */
-#line 234 "parse_tree.y"
+#line 235 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(3) - (7)].nd_obj).nd, (yyvsp[(6) - (7)].nd_obj).nd, "while"); ;}
     break;
 
   case 67:
 
 /* Line 1455 of yacc.c  */
-#line 239 "parse_tree.y"
+#line 240 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(3) - (9)].nd_obj).nd, (yyvsp[(7) - (9)].nd_obj).nd, "do_while"); ;}
     break;
 
   case 68:
 
 /* Line 1455 of yacc.c  */
-#line 244 "parse_tree.y"
+#line 245 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(make_node((yyvsp[(3) - (10)].nd_obj).nd,(yyvsp[(4) - (10)].nd_obj).nd,"for_init"), make_node((yyvsp[(6) - (10)].nd_obj).nd,(yyvsp[(9) - (10)].nd_obj).nd,"for_body"), "for"); ;}
     break;
 
   case 69:
 
 /* Line 1455 of yacc.c  */
-#line 249 "parse_tree.y"
+#line 250 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(3) - (7)].nd_obj).nd, (yyvsp[(6) - (7)].nd_obj).nd, "switch"); ;}
     break;
 
   case 70:
 
 /* Line 1455 of yacc.c  */
-#line 253 "parse_tree.y"
+#line 254 "parse_tree.y"
     { (yyval.nd_obj).nd = NULL; ;}
     break;
 
   case 71:
 
 /* Line 1455 of yacc.c  */
-#line 254 "parse_tree.y"
+#line 255 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, (yyvsp[(2) - (2)].nd_obj).nd, "case_list"); ;}
     break;
 
   case 72:
 
 /* Line 1455 of yacc.c  */
-#line 258 "parse_tree.y"
+#line 259 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, (yyvsp[(2) - (2)].nd_obj).nd, "case_block"); ;}
     break;
 
   case 73:
 
 /* Line 1455 of yacc.c  */
-#line 262 "parse_tree.y"
+#line 263 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 74:
 
 /* Line 1455 of yacc.c  */
-#line 263 "parse_tree.y"
+#line 264 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (2)].nd_obj).nd, (yyvsp[(2) - (2)].nd_obj).nd, "case_labels"); ;}
     break;
 
   case 75:
 
 /* Line 1455 of yacc.c  */
-#line 267 "parse_tree.y"
+#line 268 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(2) - (3)].nd_obj).nd, NULL, "case"); ;}
     break;
 
   case 76:
 
 /* Line 1455 of yacc.c  */
-#line 268 "parse_tree.y"
+#line 269 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(NULL, NULL, "default"); ;}
     break;
 
   case 77:
 
 /* Line 1455 of yacc.c  */
-#line 272 "parse_tree.y"
+#line 273 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(NULL, NULL, "break"); ;}
     break;
 
   case 78:
 
 /* Line 1455 of yacc.c  */
-#line 276 "parse_tree.y"
+#line 277 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 79:
 
 /* Line 1455 of yacc.c  */
-#line 277 "parse_tree.y"
+#line 278 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 80:
 
 /* Line 1455 of yacc.c  */
-#line 278 "parse_tree.y"
+#line 279 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(NULL,NULL,";"); ;}
     break;
 
   case 81:
 
 /* Line 1455 of yacc.c  */
-#line 282 "parse_tree.y"
+#line 283 "parse_tree.y"
     { (yyval.nd_obj).nd = NULL; ;}
     break;
 
   case 82:
 
 /* Line 1455 of yacc.c  */
-#line 283 "parse_tree.y"
+#line 284 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 83:
 
 /* Line 1455 of yacc.c  */
-#line 288 "parse_tree.y"
-    { (yyval.nd_obj).nd = make_node(NULL, make_node(NULL,NULL,strdup(yytext)), "printf"); ;}
+#line 289 "parse_tree.y"
+    { (yyval.nd_obj).nd = make_node(NULL, make_node(NULL,NULL,strdup(yylex)), "printf"); ;}
     break;
 
   case 84:
 
 /* Line 1455 of yacc.c  */
-#line 290 "parse_tree.y"
-    { (yyval.nd_obj).nd = make_node(make_node(NULL,NULL,strdup(yytext)), make_node(NULL,NULL,strdup(yytext)), "printf2"); ;}
+#line 291 "parse_tree.y"
+    { (yyval.nd_obj).nd = make_node(make_node(NULL,NULL,strdup(yylex)), make_node(NULL,NULL,strdup(yylex)), "printf2"); ;}
     break;
 
   case 85:
 
 /* Line 1455 of yacc.c  */
-#line 292 "parse_tree.y"
+#line 293 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(NULL,NULL,"printf_err"); ;}
     break;
 
   case 86:
 
 /* Line 1455 of yacc.c  */
-#line 296 "parse_tree.y"
-    { (yyval.nd_obj).nd = make_node(NULL, make_node(NULL,NULL,strdup(yytext)), "return"); ;}
+#line 297 "parse_tree.y"
+    { (yyval.nd_obj).nd = make_node(NULL, make_node(NULL,NULL,strdup(yylex)), "return"); ;}
     break;
 
   case 87:
 
 /* Line 1455 of yacc.c  */
-#line 297 "parse_tree.y"
-    { (yyval.nd_obj).nd = make_node(NULL, make_node(NULL,NULL,strdup(yytext)), "return_id"); ;}
+#line 298 "parse_tree.y"
+    { (yyval.nd_obj).nd = make_node(NULL, make_node(NULL,NULL,strdup(yylex)), "return_id"); ;}
     break;
 
   case 88:
 
 /* Line 1455 of yacc.c  */
-#line 298 "parse_tree.y"
+#line 299 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(NULL,NULL,"return_err"); ;}
     break;
 
   case 89:
 
 /* Line 1455 of yacc.c  */
-#line 302 "parse_tree.y"
+#line 303 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 90:
 
 /* Line 1455 of yacc.c  */
-#line 303 "parse_tree.y"
+#line 304 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node(NULL,NULL,"expr_err"); ;}
     break;
 
   case 91:
 
 /* Line 1455 of yacc.c  */
-#line 307 "parse_tree.y"
-    { (yyval.nd_obj).nd = make_node(make_node(NULL,NULL,strdup(yytext)), (yyvsp[(2) - (2)].nd_obj).nd, "assign"); ;}
+#line 308 "parse_tree.y"
+    { (yyval.nd_obj).nd = make_node(make_node(NULL,NULL,strdup(yylex)), (yyvsp[(2) - (2)].nd_obj).nd, "assign"); ;}
     break;
 
   case 92:
 
 /* Line 1455 of yacc.c  */
-#line 308 "parse_tree.y"
+#line 309 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 93:
 
 /* Line 1455 of yacc.c  */
-#line 312 "parse_tree.y"
+#line 313 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 94:
 
 /* Line 1455 of yacc.c  */
-#line 313 "parse_tree.y"
+#line 314 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, "<"); ;}
     break;
 
   case 95:
 
 /* Line 1455 of yacc.c  */
-#line 314 "parse_tree.y"
+#line 315 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, ">"); ;}
     break;
 
   case 96:
 
 /* Line 1455 of yacc.c  */
-#line 315 "parse_tree.y"
+#line 316 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, "<="); ;}
     break;
 
   case 97:
 
 /* Line 1455 of yacc.c  */
-#line 316 "parse_tree.y"
+#line 317 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, ">="); ;}
     break;
 
   case 98:
 
 /* Line 1455 of yacc.c  */
-#line 317 "parse_tree.y"
+#line 318 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, "=="); ;}
     break;
 
   case 99:
 
 /* Line 1455 of yacc.c  */
-#line 318 "parse_tree.y"
+#line 319 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, "!="); ;}
     break;
 
   case 100:
 
 /* Line 1455 of yacc.c  */
-#line 322 "parse_tree.y"
+#line 323 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 101:
 
 /* Line 1455 of yacc.c  */
-#line 323 "parse_tree.y"
+#line 324 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, "+"); ;}
     break;
 
   case 102:
 
 /* Line 1455 of yacc.c  */
-#line 324 "parse_tree.y"
+#line 325 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, "-"); ;}
     break;
 
   case 103:
 
 /* Line 1455 of yacc.c  */
-#line 328 "parse_tree.y"
+#line 329 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 104:
 
 /* Line 1455 of yacc.c  */
-#line 329 "parse_tree.y"
+#line 330 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, "*"); ;}
     break;
 
   case 105:
 
 /* Line 1455 of yacc.c  */
-#line 330 "parse_tree.y"
+#line 331 "parse_tree.y"
     { (yyval.nd_obj).nd = make_node((yyvsp[(1) - (3)].nd_obj).nd, (yyvsp[(3) - (3)].nd_obj).nd, "/"); ;}
     break;
 
   case 106:
 
 /* Line 1455 of yacc.c  */
-#line 334 "parse_tree.y"
+#line 335 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(1) - (1)].nd_obj).nd; ;}
     break;
 
   case 107:
 
 /* Line 1455 of yacc.c  */
-#line 335 "parse_tree.y"
-    { (yyval.nd_obj).nd = make_node(make_node(NULL,NULL,strdup(yytext)), NULL, "postfix_unary"); ;}
+#line 336 "parse_tree.y"
+    { (yyval.nd_obj).nd = make_node(make_node(NULL,NULL,strdup(yylex)), NULL, "postfix_unary"); ;}
     break;
 
   case 108:
 
 /* Line 1455 of yacc.c  */
-#line 339 "parse_tree.y"
-    { add('V'); (yyval.nd_obj).nd = make_node(NULL, NULL, strdup(yytext)); ;}
+#line 340 "parse_tree.y"
+    { add('V'); (yyval.nd_obj).nd = make_node(NULL, NULL, strdup(yylex)); ;}
     break;
 
   case 109:
 
 /* Line 1455 of yacc.c  */
-#line 340 "parse_tree.y"
-    { add('C'); (yyval.nd_obj).nd = make_node(NULL, NULL, strdup(yytext)); ;}
+#line 341 "parse_tree.y"
+    { add('C'); (yyval.nd_obj).nd = make_node(NULL, NULL, strdup(yylex)); ;}
     break;
 
   case 110:
 
 /* Line 1455 of yacc.c  */
-#line 341 "parse_tree.y"
-    { add('C'); (yyval.nd_obj).nd = make_node(NULL, NULL, strdup(yytext)); ;}
+#line 342 "parse_tree.y"
+    { add('C'); (yyval.nd_obj).nd = make_node(NULL, NULL, strdup(yylex)); ;}
     break;
 
   case 111:
 
 /* Line 1455 of yacc.c  */
-#line 342 "parse_tree.y"
-    { add('C'); (yyval.nd_obj).nd = make_node(NULL, NULL, strdup(yytext)); ;}
+#line 343 "parse_tree.y"
+    { add('C'); (yyval.nd_obj).nd = make_node(NULL, NULL, strdup(yylex)); ;}
     break;
 
   case 112:
 
 /* Line 1455 of yacc.c  */
-#line 343 "parse_tree.y"
-    { add('C'); (yyval.nd_obj).nd = make_node(NULL, NULL, strdup(yytext)); ;}
+#line 344 "parse_tree.y"
+    { add('C'); (yyval.nd_obj).nd = make_node(NULL, NULL, strdup(yylex)); ;}
     break;
 
   case 113:
 
 /* Line 1455 of yacc.c  */
-#line 344 "parse_tree.y"
+#line 345 "parse_tree.y"
     { (yyval.nd_obj).nd = (yyvsp[(2) - (3)].nd_obj).nd; ;}
     break;
 
 
 
 /* Line 1455 of yacc.c  */
-#line 2429 "parse_tree.tab.c"
+#line 2430 "parse_tree.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2637,7 +2638,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 347 "parse_tree.y"
+#line 348 "parse_tree.y"
 
 
 void yyerror (const char *s) {
@@ -2706,22 +2707,44 @@ struct node* make_node (struct node* left, struct node* right, char *token) {
     return new_node;
 }
 
-int main () {
-    yyparse();
-    printf("-----------------------LEXICAL ANALYSIS-------------------------\n");
-    printf(" SYMBOL        | DATATYPE      | TYPE          | LINE NUMBER   |\n");
-    for (int i = 0 ; i < ind ; i++) {
-        printf("%15s|%15s|%15s|%15d\n", symbol_table[i].id_name, symbol_table[i].data_type, symbol_table[i].type, symbol_table[i].line_no);
-    }
-    for (int i = 0 ; i < ind ; i++) {
-        free(symbol_table[i].id_name);
-        free(symbol_table[i].type);
+int main (int argc, char **argv) {
+
+    if (argc < 2) {
+        printf("Usage: %s <source.c>\n", argv[0]);
+        return 1;
     }
 
-    printf("\n\n");
-    printf("---------------------SYNTAX ANALYSIS--------------------------\n");
-    print_tree(head);
-    printf("\n\n");
+    FILE *file = fopen(argv[1], "r");
+    if (!file) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    extern FILE *yyin;
+    yyin = file;
+
+    if (yyparse() == 0) {
+        printf("\nParsing successfully completed\n");
+        printf("-----------------------LEXICAL ANALYSIS-------------------------\n");
+        printf(" SYMBOL        | DATATYPE      | TYPE          | LINE NUMBER   |\n");
+        for (int i = 0 ; i < ind ; i++) {
+            printf("%15s|%15s|%15s|%15d\n", symbol_table[i].id_name, symbol_table[i].data_type, symbol_table[i].type, symbol_table[i].line_no);
+        }
+        for (int i = 0 ; i < ind ; i++) {
+            free(symbol_table[i].id_name);
+            free(symbol_table[i].type);
+        }
+
+        printf("\n\n");
+        printf("---------------------SYNTAX ANALYSIS--------------------------\n");
+        print_tree(head);
+        printf("\n\n");
+    }
+    else {
+        fprintf(stderr, "Parsing failed!\n");
+    }
+
+    fclose(file);
     return 0;
 }
 
